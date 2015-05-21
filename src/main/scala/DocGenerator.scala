@@ -1,36 +1,34 @@
 import newmodel._
 
-/**
- * @author yaroslav.gryniuk
- */
+
 trait DocGenerator {
   def generate(root: DocElement, index: Index): String
 }
 
 object PlainStringGenerator extends DocGenerator {
   override def generate(root: DocElement, index: Index): String = {
-   /* println("Root package")
-    def modelHandler(doc: DocElement): String = {
-      def valParamsToStr(inputs: Seq[ValueParam]) =
-        inputs.foldLeft("") {
-          (str, valueParam: ValueParam) =>
-            val implicitStr = if (valueParam.isImplicit) "implicit" else ""
-            str + implicitStr + " " + valueParam.name + ": " + valueParam.result.name
+    /* println("Root package")
+     def modelHandler(doc: DocElement): String = {
+       def valParamsToStr(inputs: Seq[ValueParam]) =
+         inputs.foldLeft("") {
+           (str, valueParam: ValueParam) =>
+             val implicitStr = if (valueParam.isImplicit) "implicit" else ""
+             str + implicitStr + " " + valueParam.name + ": " + valueParam.result.name
 
-        }
+         }
 
-      doc match {
-        case Package(name, elems, _, _) =>
-          "Package name : " + name + "\n" + elems.map(modelHandler).mkString("\n")
-        case ClassDoc(name, elems, _, _, _) =>
-          "Class name : " + name + "\n" + elems.map(modelHandler).mkString("\n")
-        case MethodDoc(name, returnType, inputs, _, _, _, _, _) =>
-          s"Method : def $name( ${valParamsToStr(inputs)} ): ${returnType.name}"
-        case ConstructorDoc(name, inputs, _, _) =>
-          s"Constructor : def $name(${valParamsToStr(inputs)})"
-      }
-    }
-    modelHandler(root)*/
+       doc match {
+         case Package(name, elems, _, _) =>
+           "Package name : " + name + "\n" + elems.map(modelHandler).mkString("\n")
+         case ClassDoc(name, elems, _, _, _) =>
+           "Class name : " + name + "\n" + elems.map(modelHandler).mkString("\n")
+         case MethodDoc(name, returnType, inputs, _, _, _, _, _) =>
+           s"Method : def $name( ${valParamsToStr(inputs)} ): ${returnType.name}"
+         case ConstructorDoc(name, inputs, _, _) =>
+           s"Constructor : def $name(${valParamsToStr(inputs)})"
+       }
+     }
+     modelHandler(root)*/
     ??? // todo adapt
   }
 }
@@ -45,23 +43,20 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def extractAllPackages(root: Package) = {
-    def loop(el: Package): List[Package] = el.elements.filter {
-      case _: Package => true
-      case _ => false
-    }.map {
+    def loop(el: Package): Seq[Package] = el.elements.collect {
       case p: Package =>
-        p :: loop(p)
-    }.foldLeft(List.empty[Package])(_ ::: _)
+        p +: loop(p)
+    }.flatten
     loop(root)
   }
 
   def processPackage(pack: Package): String = {
-    val grouped: Map[String, Seq[DocElement]] = pack.elements.map {
-      case e: ClassDoc => ("classes", e)
-      case e: ObjectDoc => ("objects", e)
-      case e: TraitDoc => ("traits", e)
-      case e: DocElement => ("nvm", e)
-    }.groupBy(_._1).mapValues(_.map(_._2))
+    val grouped: Map[String, Seq[DocElement]] = pack.elements.groupBy {
+      case e: ClassDoc => "classes"
+      case e: ObjectDoc => "objects"
+      case e: TraitDoc => "traits"
+      case e: DocElement => "nvm"
+    }
     processObjects(grouped("objects"))
   }
 
@@ -73,7 +68,7 @@ object LatexDocGenerator extends DocGenerator {
       |\hbox{{\bf  Objects}}
       |
       | """.stripMargin +
-      classes.filter(_.isInstanceOf[ObjectDoc]).map { case e: ObjectDoc => processObject(e) }.mkString("\n")
+      classes.collect{ case e: ObjectDoc => processObject(e) }.mkString("\n")
 
 
   }
@@ -83,8 +78,8 @@ object LatexDocGenerator extends DocGenerator {
       s"\\subsection{Declaration}{\n\\begin{lstlisting}[frame=none]\nobject ${obj.name}\\end{lstlisting}" +
       processMethodsSummary(obj.members) +
       "\\subsection{Methods}{\n\\vskip -2em\n\\begin{itemize}" +
-      obj.members.filter(_.isInstanceOf[MethodDoc]).map {
-        processMethod
+      obj.members.collect { case _: MethodDoc =>
+        processMethod _
       }.mkString("\n") +
       "\n\\end{itemize}\n}" +
       "}"
