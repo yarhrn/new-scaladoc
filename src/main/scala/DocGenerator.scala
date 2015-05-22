@@ -2,11 +2,11 @@ import newmodel._
 
 
 trait DocGenerator {
-  def generate(root: DocElement, index: Index): String
+  def generate(root: Package, index: Index): String
 }
 
 object PlainStringGenerator extends DocGenerator {
-  override def generate(root: DocElement, index: Index): String = {
+  override def generate(root: Package, index: Index): String = {
     /* println("Root package")
      def modelHandler(doc: DocElement): String = {
        def valParamsToStr(inputs: Seq[ValueParam]) =
@@ -34,12 +34,12 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
-  override def generate(root: DocElement, index: Index) = {
+  override def generate(root: Package, index: Index) = {
     latexHeader + processDocTree(root) + latexEnder
   }
 
-  def processDocTree(root: DocElement): String = {
-    extractAllPackages(root.asInstanceOf[Package]).map(processPackage).mkString("\n")
+  def processDocTree(root: Package): String = {
+    extractAllPackages(root).map(processPackage).mkString("\n")
   }
 
   def extractAllPackages(root: Package) = {
@@ -57,10 +57,10 @@ object LatexDocGenerator extends DocGenerator {
       case e: TraitDoc => "traits"
       case e: DocElement => "nvm"
     }
-    processObjects(grouped("objects"))
+    processObjects(grouped("objects").map(_.asInstanceOf[ObjectDoc]))
   }
 
-  def processObjects(classes: Seq[DocElement]) = {
+  def processObjects(classes: Seq[ObjectDoc]) = {
     """\chapter{Package org}{
       |\label{org}\hskip -.05in
       |\hbox to \hsize{\textit{ Package Contents\hfil Page}}
@@ -68,9 +68,7 @@ object LatexDocGenerator extends DocGenerator {
       |\hbox{{\bf  Objects}}
       |
       | """.stripMargin +
-      classes.collect{ case e: ObjectDoc => processObject(e) }.mkString("\n")
-
-
+      classes.map(processObject).mkString("\n")
   }
 
   def processObject(obj: ObjectDoc): String = {
@@ -87,27 +85,20 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processMethodsSummary(mehtods: Seq[DocElement]): String = {
-    "\\subsection{Method summary}{\n\\begin{verse}\n" + mehtods.filter(_.isInstanceOf[MethodDoc]).map {
+    "\\subsection{Method summary}{\n\\begin{verse}\n" + mehtods.collect {
       case e: MethodDoc =>
         s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\"
     }.mkString("\n") + "\\end{verse}\n}"
   }
 
-  def dumpMethodInputs(e: MethodDoc): String = e.inputs.map {
-    _.result.name
-  }.mkString(",")
+  def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
 
-  def dumpSignature(e: MethodDoc) = e.inputs.map {
-    input =>
-      input.name + " : " + input.result.name
+  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
 
-  }.mkString(", ")
-
-  def processMethod(m: DocElement): String = m match {
-    case method: MethodDoc =>
-      s"\\item{ \n\\index{apply()}\n{\\bf  ${method.name}}\\\\\n\\begin{lstlisting}[frame=none]" +
-        s"\ndef ${method.name}(${dumpSignature(method)}) : ${method.returnType.name}\\end{lstlisting} %end signature\n\\begin{itemize}\n\\item{" +
-        s"\n{\\bf  Description}\n ${method.comment.rawComment}\n}\n\\end{itemize}\n}%end item"
+  def processMethod(m: MethodDoc): String = {
+    s"\\item{ \n\\index{apply()}\n{\\bf  ${m.name}}\\\\\n\\begin{lstlisting}[frame=none]" +
+      s"\ndef ${m.name}(${dumpSignature(m)}) : ${m.returnType.name}\\end{lstlisting} %end signature\n\\begin{itemize}\n\\item{" +
+      s"\n{\\bf  Description}\n ${m.comment.rawComment}\n}\n\\end{itemize}\n}%end item"
   }
 
 
