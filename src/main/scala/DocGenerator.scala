@@ -35,6 +35,8 @@ object PlainStringGenerator extends DocGenerator {
 
 object LatexDocGenerator extends DocGenerator {
   override def generate(root: Package, index: Index) = {
+
+
     latexHeader + processDocTree(root) + latexEnder
   }
 
@@ -62,33 +64,45 @@ object LatexDocGenerator extends DocGenerator {
 
   def processObjects(classes: Seq[ObjectDoc]) = {
     """\chapter{Package org}{
-      |\label{org}\hskip -.05in
-      |\hbox to \hsize{\textit{ Package Contents\hfil Page}}
-      |\vskip .13in
-      |\hbox{{\bf  Objects}}
-      |
-      | """.stripMargin +
+       \label{org}\hskip -.05in
+       \hbox to \hsize{\textit{ Package Contents\hfil Page}}
+       \vskip .13in
+       \hbox{{\bf  Objects}}
+    """ +
       classes.map(processObject).mkString("\n")
   }
 
   def processObject(obj: ObjectDoc): String = {
-    s"\\entityintro{${obj.name}}{${obj.id.qualifiedName}_object}{${obj.comment.rawComment}}\n\\vskip .1in\n\\vskip .1in\n\\section{\\label{${obj.id.qualifiedName}_object}\\index{${obj.name}}object ${obj.name}}{\n\\vskip .1in \n${obj.comment.rawComment} " +
-      s"\\subsection{Declaration}{\n\\begin{lstlisting}[frame=none]\nobject ${obj.name}\\end{lstlisting}" +
-      processMethodsSummary(obj.members) +
-      "\\subsection{Methods}{\n\\vskip -2em\n\\begin{itemize}" +
-      obj.members.collect { case _: MethodDoc =>
-        processMethod _
-      }.mkString("\n") +
-      "\n\\end{itemize}\n}" +
-      "}"
-
+    val qualifiedName = obj.id.qualifiedName
+    val name = obj.name
+    val comment = obj.comment
+    val methodsSummary = processMethodsSummary(obj.members)
+    val methods = {obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")}
+    s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
+      \\vskip .1in
+      \\vskip .1in
+      \\section{\\label{${qualifiedName}_object}\\index{$name}object $name}{
+      \\vskip .1in
+      $comment
+      \\subsection{Declaration}{
+      \\begin{lstlisting}[frame=none]
+      object ${obj.name}
+      \\end{lstlisting}
+      $methodsSummary
+      \\subsection{Methods}{
+      \\vskip -2em
+      \\begin{itemize}
+      $methods
+      \\end{itemize}
+      }}""".stripMargin
   }
 
   def processMethodsSummary(mehtods: Seq[DocElement]): String = {
-    "\\subsection{Method summary}{\n\\begin{verse}\n" + mehtods.collect {
-      case e: MethodDoc =>
-        s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\"
-    }.mkString("\n") + "\\end{verse}\n}"
+    s"""\\subsection{Method summary}{
+      \\begin{verse}
+        ${mehtods.collect { case e: MethodDoc => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+      \\end{verse}
+      }""".stripMargin
   }
 
   def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
@@ -96,13 +110,74 @@ object LatexDocGenerator extends DocGenerator {
   def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
 
   def processMethod(m: MethodDoc): String = {
-    s"\\item{ \n\\index{apply()}\n{\\bf  ${m.name}}\\\\\n\\begin{lstlisting}[frame=none]" +
-      s"\ndef ${m.name}(${dumpSignature(m)}) : ${m.returnType.name}\\end{lstlisting} %end signature\n\\begin{itemize}\n\\item{" +
-      s"\n{\\bf  Description}\n ${m.comment.rawComment}\n}\n\\end{itemize}\n}%end item"
+    val name = m.name
+    val returnType = m.returnType
+    val comment = m.comment.rawComment
+    val signature = dumpSignature(m)
+    s"""\\item{
+      \\index{$name()}
+      {\\bf  $name}
+      \\begin{lstlisting}[frame=none]
+        def $signature($signature) : $returnType\\end{lstlisting}
+      \\begin{itemize}
+      \\item{
+      {\\bf  Description}
+       $comment
+      }
+      \\end{itemize}}""".stripMargin
   }
 
 
-  def latexHeader = "\\documentclass[11pt,a4paper]{report}\n\\usepackage{color}\n\\usepackage{ifthen}\n\\usepackage{makeidx}\n\\usepackage{ifpdf}\n\\usepackage[headings]{fullpage}\n\\usepackage{listings}\n\\lstset{language=Java,breaklines=true}\n\\ifpdf \\usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}\n  \\usepackage[pdftex]{graphicx}\n  \\pdfcompresslevel=9\n  \\DeclareGraphicsRule{*}{mps}{*}{}\n\\else\n  \\usepackage[dvips]{graphicx}\n\\fi\n\n\\newcommand{\\entityintro}[3]{%\n  \\hbox to \\hsize{%\n    \\vbox{%\n      \\hbox to .2in{}%\n    }%\n    {\\bf  #1}%\n    \\dotfill\\pageref{#2}%\n  }\n  \\makebox[\\hsize]{%\n    \\parbox{.4in}{}%\n    \\parbox[l]{5in}{%\n      \\vspace{1mm}%\n      #3%\n      \\vspace{1mm}%\n    }%\n  }%\n}\n\\newcommand{\\refdefined}[1]{\n\\expandafter\\ifx\\csname r@#1\\endcsname\\relax\n\\relax\\else\n{$($in \\ref{#1}, page \\pageref{#1}$)$}\\fi}\n\\date{\\today}\n\\chardef\\textbackslash=`\\\\\n\\makeindex\n\\begin{document}\n\\sloppy\n\\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}\n\\tableofcontents\n"
+  def latexHeader = {
+    val slash = '\\'
+    val dollar = '$'
+    s"""${slash}documentclass[11pt,a4paper]{report}
+                       ${slash}usepackage{color}
+                       ${slash}usepackage{ifthen}
+                       ${slash}usepackage{makeidx}
+                       ${slash}usepackage{ifpdf}
+                       ${slash}usepackage[headings]{fullpage}
+                       ${slash}usepackage{listings}
+                       \\lstset{language=Java,breaklines=true}
+                       \\ifpdf ${slash}usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
+                         ${slash}usepackage[pdftex]{graphicx}
+                         \\pdfcompresslevel=9
+                         \\DeclareGraphicsRule{*}{mps}{*}{}
+                       \\else
+                         ${slash}usepackage[dvips]{graphicx}
+                       \\fi
 
-  def latexEnder = "\\printindex\n\\end{document}\n"
+                      \\newcommand{\\entityintro}[3]{%
+                         \\hbox to \\hsize{%
+                           \\vbox{%
+                             \\hbox to .2in{}%
+                           }%
+                           {\\bf  #1}%
+                           \\dotfill\\pageref{#2}%
+                         }
+                         \\makebox[\\hsize]{%
+                           \\parbox{.4in}{}%
+                           \\parbox[l]{5in}{%
+                             \\vspace{1mm}%
+                             #3%
+                             \\vspace{1mm}%
+                           }%
+                         }%
+                       }
+                       \\newcommand{\\refdefined}[1]{
+                       \\expandafter\\ifx\\csname r@#1\\endcsname\\relax
+                       \\relax\\else
+                       {$dollar(${dollar}in \\ref{#1}, page \\pageref{#1}$dollar)$dollar}\\fi}
+                       \\date{\\today}
+                       \\chardef\\textbackslash=`\\\\
+                       \\makeindex
+                       \\begin{document}
+                       \\sloppy
+                       \\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}
+                       \\tableofcontents
+                    """}
+
+  def latexEnder: String = """\printindex
+                      \end{document}
+                           """
 }

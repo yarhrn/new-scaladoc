@@ -24,7 +24,6 @@ object Main {
 
   def main(args: Array[String]): Unit = {
     val rootPackage = buildModel
-
     println(LatexDocGenerator.generate(rootPackage, Index(Seq(rootPackage))))
   }
 

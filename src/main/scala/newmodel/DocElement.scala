@@ -14,6 +14,8 @@ trait DocElement {
   def comment: Comment
 }
 
+
+
 case class Package(name: String,
                    elements: Seq[DocElement],
                    id: ID,
@@ -37,6 +39,12 @@ case class MethodDoc(name: String,
                      comment: Comment,
                      flags: Seq[Flag]) extends DocElement
 
+case class ValDoc(name: String,
+                  returnType: Type,
+                  id: ID,
+                  comment: Comment,
+                  flags: Seq[Flag]) extends DocElement
+
 case class ObjectDoc(name: String,
                      members: Seq[DocElement],
                      id: ID, comment: Comment,
@@ -57,6 +65,8 @@ case class ClassDoc(name: String,
                     isCaseClass: Boolean,
                     file: SourceFile,
                     companion:Option[ObjectDoc]) extends DocElement
+
+
 
 case class Type(name: String)
 
