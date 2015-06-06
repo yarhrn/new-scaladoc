@@ -5,10 +5,10 @@ package newmodel
  */
 case class TypeParam(name: String,
                      variance: Option[Variance],
-                     lowerBound: Seq[TypeParam],     // >:
-                     upperBound: Seq[TypeParam],     // <:
-                     contextBound: Seq[TypeParam],     // :
-                     viewBound: Seq[TypeParam])     // <%
+                     lowerBound: Option[Type], // >:
+                     upperBound: Option[Type], // <:
+                     contextBound: Seq[Type],  // :
+                     viewBound: Seq[Type])     // <%
 
 
 sealed trait Variance
