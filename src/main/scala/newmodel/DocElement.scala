@@ -15,7 +15,6 @@ trait DocElement {
 }
 
 
-
 case class Package(name: String,
                    elements: Seq[DocElement],
                    id: ID,
@@ -37,7 +36,8 @@ case class MethodDoc(name: String,
                      inputs: Seq[ValueParam],
                      id: ID,
                      comment: Comment,
-                     flags: Seq[Flag]) extends DocElement
+                     flags: Seq[Flag],
+                     typeParams: Seq[TypeParam]) extends DocElement
 
 case class ValDoc(name: String,
                   returnType: Type,
@@ -47,14 +47,17 @@ case class ValDoc(name: String,
 
 case class ObjectDoc(name: String,
                      members: Seq[DocElement],
-                     id: ID, comment: Comment,
-                     file: SourceFile) extends DocElement
+                     id: ID,
+                     comment: Comment,
+                     file: SourceFile,
+                     flags: Seq[Flag]) extends DocElement
 
 case class TraitDoc(name: String,
                     members: Seq[DocElement],
                     id: ID,
                     comment: Comment,
-                    file: SourceFile) extends DocElement
+                    file: SourceFile,
+                    typeParams: Seq[TypeParam]) extends DocElement
 
 case class ClassDoc(name: String,
                     members: Seq[DocElement],
@@ -62,10 +65,10 @@ case class ClassDoc(name: String,
                     constructors: Seq[ConstructorDoc],
                     id: ID,
                     comment: Comment,
-                    isCaseClass: Boolean,
+                    flags: Seq[Flag],
                     file: SourceFile,
-                    companion:Option[ObjectDoc]) extends DocElement
-
+                    companion: Option[ObjectDoc],
+                    typeParams: Seq[TypeParam]) extends DocElement
 
 
 case class Type(name: String)

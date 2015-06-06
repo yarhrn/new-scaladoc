@@ -62,6 +62,21 @@ object LatexDocGenerator extends DocGenerator {
     processObjects(grouped("objects").map(_.asInstanceOf[ObjectDoc]))
   }
 
+  def dumpTypeParam(tp: TypeParam) = {
+    def process(tpe: Option[Type], bound: String) = tpe.map(bound + _.name).getOrElse("")
+    tp.variance.map { case _: Covariance => "+"; case _: Contravariance => "-" }.getOrElse("") +
+      tp.name +
+      process(tp.lowerBound, " >: ") +
+      process(tp.upperBound, " <: ")
+  }
+
+  def dumpTypeParams(tps: Seq[TypeParam]) = {
+    val params = tps.map(dumpTypeParam).mkString(", ")
+    if (params.nonEmpty) {
+      s"[$params]"
+    } else ""
+  }
+
   def processObjects(classes: Seq[ObjectDoc]) = {
     """\chapter{Package org}{
        \label{org}\hskip -.05in
@@ -77,7 +92,9 @@ object LatexDocGenerator extends DocGenerator {
     val name = obj.name
     val comment = obj.comment
     val methodsSummary = processMethodsSummary(obj.members)
-    val methods = {obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")}
+    val methods = {
+      obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")
+    }
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -107,18 +124,19 @@ object LatexDocGenerator extends DocGenerator {
 
   def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
 
-  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
+  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + ": " + input.paramType.name).mkString(", ")
 
   def processMethod(m: MethodDoc): String = {
     val name = m.name
-    val returnType = m.returnType
+    val returnType = m.returnType.name
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
+    val tpes = dumpTypeParams(m.typeParams)
     s"""\\item{
       \\index{$name()}
       {\\bf  $name}
       \\begin{lstlisting}[frame=none]
-        def $signature($signature) : $returnType\\end{lstlisting}
+        def $name$tpes($signature):$returnType\\end{lstlisting}
       \\begin{itemize}
       \\item{
       {\\bf  Description}
@@ -175,7 +193,8 @@ object LatexDocGenerator extends DocGenerator {
                        \\sloppy
                        \\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}
                        \\tableofcontents
-                    """}
+                    """
+  }
 
   def latexEnder: String = """\printindex
                       \end{document}

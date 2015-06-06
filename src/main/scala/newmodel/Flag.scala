@@ -9,5 +9,6 @@ case class Sealed() extends Flag
 case class Final() extends Flag
 case class Implicit() extends Flag
 case class Abstract() extends Flag
+case class Case() extends Flag
 
 
