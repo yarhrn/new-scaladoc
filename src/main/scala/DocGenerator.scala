@@ -2,11 +2,11 @@ import newmodel._
 
 
 trait DocGenerator {
-  def generate(root: Package, index: Index): String
+  def generate(root: Package): String
 }
 
 object PlainStringGenerator extends DocGenerator {
-  override def generate(root: Package, index: Index): String = {
+  override def generate(root: Package): String = {
     /* println("Root package")
      def modelHandler(doc: DocElement): String = {
        def valParamsToStr(inputs: Seq[ValueParam]) =
@@ -34,9 +34,7 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
-  override def generate(root: Package, index: Index) = {
-
-
+  override def generate(root: Package) = {
     latexHeader + processDocTree(root) + latexEnder
   }
 
@@ -94,7 +92,7 @@ object LatexDocGenerator extends DocGenerator {
       \\begin{itemize}
       $methods
       \\end{itemize}
-      }}""".stripMargin
+      }}""" 
   }
 
   def processMethodsSummary(mehtods: Seq[DocElement]): String = {
@@ -102,7 +100,7 @@ object LatexDocGenerator extends DocGenerator {
       \\begin{verse}
         ${mehtods.collect { case e: MethodDoc => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
-      }""".stripMargin
+      }""" 
   }
 
   def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
@@ -124,7 +122,7 @@ object LatexDocGenerator extends DocGenerator {
       {\\bf  Description}
        $comment
       }
-      \\end{itemize}}""".stripMargin
+      \\end{itemize}}""" 
   }
 
 
@@ -178,6 +176,5 @@ object LatexDocGenerator extends DocGenerator {
                     """}
 
   def latexEnder: String = """\printindex
-                      \end{document}
-                           """
+                      \end{document}"""
 }
