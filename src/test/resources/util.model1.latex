@@ -1,0 +1,136 @@
+\documentclass[11pt,a4paper]{report}
+                       \usepackage{color}
+                       \usepackage{ifthen}
+                       \usepackage{makeidx}
+                       \usepackage{ifpdf}
+                       \usepackage[headings]{fullpage}
+                       \usepackage{listings}
+                       \lstset{language=Java,breaklines=true}
+                       \ifpdf \usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
+                         \usepackage[pdftex]{graphicx}
+                         \pdfcompresslevel=9
+                         \DeclareGraphicsRule{*}{mps}{*}{}
+                       \else
+                         \usepackage[dvips]{graphicx}
+                       \fi
+
+                      \newcommand{\entityintro}[3]{%
+                         \hbox to \hsize{%
+                           \vbox{%
+                             \hbox to .2in{}%
+                           }%
+                           {\bf  #1}%
+                           \dotfill\pageref{#2}%
+                         }
+                         \makebox[\hsize]{%
+                           \parbox{.4in}{}%
+                           \parbox[l]{5in}{%
+                             \vspace{1mm}%
+                             #3%
+                             \vspace{1mm}%
+                           }%
+                         }%
+                       }
+                       \newcommand{\refdefined}[1]{
+                       \expandafter\ifx\csname r@#1\endcsname\relax
+                       \relax\else
+                       {$($in \ref{#1}, page \pageref{#1}$)$}\fi}
+                       \date{\today}
+                       \chardef\textbackslash=`\\
+                       \makeindex
+                       \begin{document}
+                       \sloppy
+                       \addtocontents{toc}{\protect\markboth{Contents}{Contents}}
+                       \tableofcontents
+                    \chapter{Package org}{
+       \label{org}\hskip -.05in
+       \hbox to \hsize{\textit{ Package Contents\hfil Page}}
+       \vskip .13in
+       \hbox{{\bf  Objects}}
+    \entityintro{Test}{_object}{Comment(Awesome test class with two methods)}
+      \vskip .1in
+      \vskip .1in
+      \section{\label{_object}\index{Test}object Test}{
+      \vskip .1in
+      Comment(Awesome test class with two methods)
+      \subsection{Declaration}{
+      \begin{lstlisting}[frame=none]
+      object Test
+      \end{lstlisting}
+      \subsection{Method summary}{
+      \begin{verse}
+        {\bf def foo(String)}\\
+{\bf def foo1()}\\
+      \end{verse}
+      }
+      \subsection{Methods}{
+      \vskip -2em
+      \begin{itemize}
+      \item{
+      \index{foo()}
+      {\bf  foo}
+      \begin{lstlisting}[frame=none]
+        def a : String(a : String) : Type(String)\end{lstlisting}
+      \begin{itemize}
+      \item{
+      {\bf  Description}
+       Cool method!
+      }
+      \end{itemize}}
+\item{
+      \index{foo1()}
+      {\bf  foo1}
+      \begin{lstlisting}[frame=none]
+        def () : Type(String)\end{lstlisting}
+      \begin{itemize}
+      \item{
+      {\bf  Description}
+       Another cool method!
+      }
+      \end{itemize}}
+      \end{itemize}
+      }}
+\entityintro{Bar}{_object}{Comment(Awesome bar object with two methods)}
+      \vskip .1in
+      \vskip .1in
+      \section{\label{_object}\index{Bar}object Bar}{
+      \vskip .1in
+      Comment(Awesome bar object with two methods)
+      \subsection{Declaration}{
+      \begin{lstlisting}[frame=none]
+      object Bar
+      \end{lstlisting}
+      \subsection{Method summary}{
+      \begin{verse}
+        {\bf def bar(String)}\\
+{\bf def bar1()}\\
+      \end{verse}
+      }
+      \subsection{Methods}{
+      \vskip -2em
+      \begin{itemize}
+      \item{
+      \index{bar()}
+      {\bf  bar}
+      \begin{lstlisting}[frame=none]
+        def a : String(a : String) : Type(String)\end{lstlisting}
+      \begin{itemize}
+      \item{
+      {\bf  Description}
+       Cool method! of bar
+      }
+      \end{itemize}}
+\item{
+      \index{bar1()}
+      {\bf  bar1}
+      \begin{lstlisting}[frame=none]
+        def () : Type(String)\end{lstlisting}
+      \begin{itemize}
+      \item{
+      {\bf  Description}
+       Another cool method of bar!
+      }
+      \end{itemize}}
+      \end{itemize}
+      }}\printindex
+                      \end{document}
