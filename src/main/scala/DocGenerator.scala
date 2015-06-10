@@ -57,7 +57,8 @@ object LatexDocGenerator extends DocGenerator {
       case e: TraitDoc => "traits"
       case e: DocElement => "nvm"
     }
-    processObjects(grouped("objects").map(_.asInstanceOf[ObjectDoc]))
+    val objects = pack.elements.collect { case o: ObjectDoc => o }
+    processObjects(objects)
   }
 
   def processObjects(classes: Seq[ObjectDoc]) = {
