@@ -1,3 +1,5 @@
+import newmodel.Decl.Def
+import newmodel.Defn.{TraitDoc, ObjectDoc, ClassDoc}
 import newmodel._
 
 
@@ -76,7 +78,7 @@ object LatexDocGenerator extends DocGenerator {
     val name = obj.name
     val comment = obj.comment
     val methodsSummary = processMethodsSummary(obj.members)
-    val methods = {obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")}
+    val methods = {obj.members.collect { case m: Def => processMethod(m) }.mkString("\n")}
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -99,16 +101,16 @@ object LatexDocGenerator extends DocGenerator {
   def processMethodsSummary(mehtods: Seq[DocElement]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${mehtods.collect { case e: MethodDoc => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${mehtods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
       }""" 
   }
 
-  def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.inputs.map(_.paramType.name).mkString(",")
 
-  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
+  def dumpSignature(e: Def) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
 
-  def processMethod(m: MethodDoc): String = {
+  def processMethod(m: Def): String = {
     val name = m.name
     val returnType = m.returnType
     val comment = m.comment.rawComment

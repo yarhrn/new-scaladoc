@@ -1,3 +1,4 @@
+import newmodel.Defn.{ObjectDoc, ClassDoc}
 import newmodel._
 
 
@@ -39,7 +40,7 @@ object Index {
     docElements.map {
       case e: ClassDoc =>
         docElements.find({
-          case ObjectDoc(`e`.name, _, _, _, `e`.file) => true
+          case ObjectDoc(`e`.name, _, _, _,_, `e`.file) => true
         }).map(e.id -> _)
       case _ => None
     }.filter(_.isDefined).map(_.get).toMap
