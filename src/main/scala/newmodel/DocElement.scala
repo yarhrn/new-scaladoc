@@ -10,6 +10,8 @@ case class Comment(rawComment: String)
 
 case class SourceFile(name: String)
 
+trait Tree
+
 //for now
 trait DocElement {
   def id: ID
@@ -22,21 +24,24 @@ case class Package(name: String,
                    id: ID,
                    comment: Comment) extends DocElement
 
+
+trait Defn extends DocElement
+
 object Defn {
 
 
   case class ObjectDoc(name: String,
                        members: Seq[DocElement],
                        id: ID, comment: Comment,
-                       flags: Seq[Flag],
-                       file: SourceFile) extends DocElement
+                       flags: Seq[Mod],
+                       file: SourceFile) extends Defn
 
   case class TraitDoc(name: String,
                       members: Seq[DocElement],
                       id: ID,
                       comment: Comment,
-                      flags: Seq[Flag],
-                      file: SourceFile) extends DocElement
+                      flags: Seq[Mod],
+                      file: SourceFile) extends Defn
 
   case class ClassDoc(name: String,
                       members: Seq[DocElement],
@@ -44,9 +49,9 @@ object Defn {
                       constructors: Seq[ConstructorDoc],
                       id: ID,
                       comment: Comment,
-                      flags: Seq[Flag],
+                      flags: Seq[Mod],
                       file: SourceFile,
-                      companion: Option[ObjectDoc]) extends DocElement
+                      companion: Option[ObjectDoc]) extends Defn
 
 }
 
@@ -54,11 +59,13 @@ object Ctor {
 
   //ConstructorDoc
   case class ConstructorDoc(name: String,
-                            inputs: Seq[ValueParam],
+                            inputs: Seq[Term.Param],
                             id: ID,
                             comment: Comment) extends DocElement
 
 }
+
+trait Decl extends DocElement
 
 object Decl {
 
@@ -67,31 +74,33 @@ object Decl {
                  returnType: Type.Name,
                  id: ID,
                  comment: Comment,
-                 flags: Seq[Flag]) extends DocElement
+                 flags: Seq[Mod]) extends Decl
 
   //VarDoc
   case class Var(name: String,
                  returnType: Type.Name,
                  id: ID,
                  comment: Comment,
-                 flags: Seq[Flag]) extends DocElement
+                 flags: Seq[Mod]) extends Decl
 
   //MethodDoc
   case class Def(name: String,
                  returnType: Type.Name,
-                 inputs: Seq[ValueParam],
+                 inputs: Seq[Term.Param],
                  id: ID,
                  tparams: Seq[Type.Param],
                  comment: Comment,
-                 flags: Seq[Flag]) extends DocElement
+                 flags: Seq[Mod]) extends Decl
 
 }
 
 
+trait Type
 
 object Type {
 
   case class Name(name: String)
+
   sealed trait Variance
 
   sealed case class Covariance() extends Variance
@@ -107,19 +116,59 @@ object Type {
               viewBounds: Seq[Name],
               contextBounds: Seq[Name])
 
-}
+  trait Arg extends Type.Arg with Tree
 
-object Param {
-
-  case class ValueParam(name: String,
-                        paramType: Type.Name,
-                        implicitly: Option[Implicit],
-                        id: ID,
-                        comment: Comment) extends DocElement
 
 }
 
 
-case class ImplicitConversions(from: Type.Name,
-                               to: Type.Name,
-                               id: ID, comment: Comment) extends DocElement
+
+case class Name(name: String) extends ID(name)
+trait Term
+object Term {
+
+  case class Param(mods: Seq[Mod],
+                   name: Name
+                   ) extends Term  // todo add default val
+
+}
+
+
+trait Mod extends Tree
+
+object Mod {
+
+  class Annot() extends Mod
+
+  class Private() extends Mod
+
+  // todo should be   class Private(within: Name.Qualifier)
+
+  class Protected() extends Mod
+
+  class Implicit() extends Mod
+
+  class Final() extends Mod
+
+  class Sealed() extends Mod
+
+  class Override() extends Mod
+
+  class Case() extends Mod
+
+  class Abstract() extends Mod
+
+  class Covariant() extends Mod
+
+  class Contravariant() extends Mod
+
+  class Lazy() extends Mod
+
+  class ValParam() extends Mod
+
+  class VarParam() extends Mod
+
+  class Ffi(signature: String) extends Mod
+
+}
+
