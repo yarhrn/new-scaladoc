@@ -13,14 +13,14 @@ case class SourceFile(name: String)
 trait Tree
 
 //for now
-case class Package(name: Name,
-                   elements: Seq[Tree],
-                   comment: Comment) extends Tree
 
 
 trait Defn extends Tree
 
 object Defn {
+  case class Package(name: Name,
+                     elements: Seq[Tree],
+                     comment: Comment) extends Tree
 
 
   case class ObjectDoc(name: Name,
