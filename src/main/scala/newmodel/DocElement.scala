@@ -13,36 +13,30 @@ case class SourceFile(name: String)
 trait Tree
 
 //for now
-trait DocElement extends Tree {
-  def name: Name
-
-  def comment: Comment
-}
-
 case class Package(name: Name,
-                   elements: Seq[DocElement],
-                   comment: Comment) extends DocElement
+                   elements: Seq[Tree],
+                   comment: Comment) extends Tree
 
 
-trait Defn extends DocElement
+trait Defn extends Tree
 
 object Defn {
 
 
   case class ObjectDoc(name: Name,
-                       members: Seq[DocElement],
+                       members: Seq[Tree],
                        comment: Comment,
                        flags: Seq[Mod],
                        file: SourceFile) extends Defn
 
   case class TraitDoc(name: Name,
-                      members: Seq[DocElement],
+                      members: Seq[Tree],
                       comment: Comment,
                       flags: Seq[Mod],
                       file: SourceFile) extends Defn
 
   case class ClassDoc(name: Name,
-                      members: Seq[DocElement],
+                      members: Seq[Tree],
                       primaryConstructor: Option[ConstructorDoc],
                       constructors: Seq[ConstructorDoc],
                       comment: Comment,
@@ -52,7 +46,7 @@ object Defn {
 
 }
 
-trait Ctor extends DocElement
+trait Ctor extends Tree
 
 object Ctor {
 
@@ -63,7 +57,7 @@ object Ctor {
 
 }
 
-trait Decl extends DocElement
+trait Decl extends Tree
 
 object Decl {
 
