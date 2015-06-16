@@ -1,27 +1,26 @@
 package newmodel
 
 import newmodel.Ctor.ConstructorDoc
-import newmodel.Param.ValueParam
 
-case class ID(qualifiedName: String)
 
 // for now
 case class Comment(rawComment: String)
+
+case class Name(name: String, hash: Int)
 
 case class SourceFile(name: String)
 
 trait Tree
 
 //for now
-trait DocElement {
-  def id: ID
+trait DocElement extends Tree {
+  def name: Name
 
   def comment: Comment
 }
 
-case class Package(name: String,
+case class Package(name: Name,
                    elements: Seq[DocElement],
-                   id: ID,
                    comment: Comment) extends DocElement
 
 
@@ -30,24 +29,22 @@ trait Defn extends DocElement
 object Defn {
 
 
-  case class ObjectDoc(name: String,
+  case class ObjectDoc(name: Name,
                        members: Seq[DocElement],
-                       id: ID, comment: Comment,
+                       comment: Comment,
                        flags: Seq[Mod],
                        file: SourceFile) extends Defn
 
-  case class TraitDoc(name: String,
+  case class TraitDoc(name: Name,
                       members: Seq[DocElement],
-                      id: ID,
                       comment: Comment,
                       flags: Seq[Mod],
                       file: SourceFile) extends Defn
 
-  case class ClassDoc(name: String,
+  case class ClassDoc(name: Name,
                       members: Seq[DocElement],
                       primaryConstructor: Option[ConstructorDoc],
                       constructors: Seq[ConstructorDoc],
-                      id: ID,
                       comment: Comment,
                       flags: Seq[Mod],
                       file: SourceFile,
@@ -55,13 +52,14 @@ object Defn {
 
 }
 
+trait Ctor extends DocElement
+
 object Ctor {
 
   //ConstructorDoc
-  case class ConstructorDoc(name: String,
+  case class ConstructorDoc(name: Name,
                             inputs: Seq[Term.Param],
-                            id: ID,
-                            comment: Comment) extends DocElement
+                            comment: Comment) extends Ctor
 
 }
 
@@ -70,24 +68,24 @@ trait Decl extends DocElement
 object Decl {
 
   //ValDoc
-  case class Val(name: String,
-                 returnType: Type.Name,
-                 id: ID,
+  case class Val(name: Name,
+                 returnType: Type,
+
                  comment: Comment,
                  flags: Seq[Mod]) extends Decl
 
   //VarDoc
-  case class Var(name: String,
-                 returnType: Type.Name,
-                 id: ID,
-                 comment: Comment,
-                 flags: Seq[Mod]) extends Decl
+  case class Var(
+                  returnType: Type,
+                  name: Name,
+                  comment: Comment,
+                  flags: Seq[Mod]) extends Decl
 
   //MethodDoc
-  case class Def(name: String,
-                 returnType: Type.Name,
+  case class Def(name: Name,
+                 returnType: Type,
                  inputs: Seq[Term.Param],
-                 id: ID,
+
                  tparams: Seq[Type.Param],
                  comment: Comment,
                  flags: Seq[Mod]) extends Decl
@@ -95,11 +93,11 @@ object Decl {
 }
 
 
-trait Type
+trait Type extends Tree
 
 object Type {
 
-  case class Name(name: String)
+  case class Name(name: String) extends Type
 
   sealed trait Variance
 
@@ -107,14 +105,14 @@ object Type {
 
   sealed case class Contravariance() extends Variance
 
-  class Bounds(lo: Option[Name], hi: Option[Name])
+  class Bounds(lo: Option[Type], hi: Option[Type])
 
   class Param(variance: Option[Variance],
-              name: String,
+              name: Type.Name,
               tparams: Seq[Type.Param],
               typeBounds: Type.Bounds,
-              viewBounds: Seq[Name],
-              contextBounds: Seq[Name])
+              viewBounds: Seq[Type],
+              contextBounds: Seq[Type]) extends Type
 
   trait Arg extends Type.Arg with Tree
 
@@ -122,14 +120,15 @@ object Type {
 }
 
 
-
-case class Name(name: String) extends ID(name)
 trait Term
+
 object Term {
 
-  case class Param(mods: Seq[Mod],
-                   name: Name
-                   ) extends Term  // todo add default val
+  case class Param(name: Name,
+                   mods: Seq[Mod],
+                   decltpe: Option[Type]) extends Term
+
+  // todo add default val
 
 }
 
