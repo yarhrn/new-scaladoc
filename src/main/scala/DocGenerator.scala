@@ -1,5 +1,5 @@
 import newmodel.Decl.Def
-import newmodel.Defn.{TraitDoc, ObjectDoc, ClassDoc}
+import newmodel.Defn.{TraitDoc, ObjectDoc, ClassDoc,Package}
 import newmodel._
 
 
@@ -53,11 +53,11 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processPackage(pack: Package): String = {
-    val grouped: Map[String, Seq[DocElement]] = pack.elements.groupBy {
+    val grouped: Map[String, Seq[Tree]] = pack.elements.groupBy {
       case e: ClassDoc => "classes"
       case e: ObjectDoc => "objects"
       case e: TraitDoc => "traits"
-      case e: DocElement => "nvm"
+      case e: Tree => "nvm"
     }
     val objects = pack.elements.collect { case o: ObjectDoc => o }
     processObjects(objects)
@@ -74,7 +74,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processObject(obj: ObjectDoc): String = {
-    val qualifiedName = obj.id.qualifiedName
+    val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
     val methodsSummary = processMethodsSummary(obj.members)
@@ -98,7 +98,7 @@ object LatexDocGenerator extends DocGenerator {
       }}""" 
   }
 
-  def processMethodsSummary(mehtods: Seq[DocElement]): String = {
+  def processMethodsSummary(mehtods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
         ${mehtods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
@@ -106,9 +106,9 @@ object LatexDocGenerator extends DocGenerator {
       }""" 
   }
 
-  def dumpMethodInputs(e: Def): String = e.inputs.map(_.paramType.name).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.inputs.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: Def) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
+  def dumpSignature(e: Def) = e.inputs.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
 
   def processMethod(m: Def): String = {
     val name = m.name

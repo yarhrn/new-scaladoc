@@ -18,6 +18,7 @@ trait Tree
 trait Defn extends Tree
 
 object Defn {
+
   case class Package(name: Name,
                      elements: Seq[Tree],
                      comment: Comment) extends Tree
@@ -26,13 +27,13 @@ object Defn {
   case class ObjectDoc(name: Name,
                        members: Seq[Tree],
                        comment: Comment,
-                       flags: Seq[Mod],
+                       mods: Seq[Mod],
                        file: SourceFile) extends Defn
 
   case class TraitDoc(name: Name,
                       members: Seq[Tree],
                       comment: Comment,
-                      flags: Seq[Mod],
+                      mods: Seq[Mod],
                       file: SourceFile) extends Defn
 
   case class ClassDoc(name: Name,
@@ -40,7 +41,8 @@ object Defn {
                       primaryConstructor: Option[ConstructorDoc],
                       constructors: Seq[ConstructorDoc],
                       comment: Comment,
-                      flags: Seq[Mod],
+                      tparams: Seq[Type.Param],
+                      mods: Seq[Mod],
                       file: SourceFile,
                       companion: Option[ObjectDoc]) extends Defn
 
@@ -63,26 +65,23 @@ object Decl {
 
   //ValDoc
   case class Val(name: Name,
-                 returnType: Type,
-
+                 tpe: Type,
                  comment: Comment,
-                 flags: Seq[Mod]) extends Decl
+                 mods: Seq[Mod]) extends Decl
 
   //VarDoc
-  case class Var(
-                  returnType: Type,
-                  name: Name,
-                  comment: Comment,
-                  flags: Seq[Mod]) extends Decl
+  case class Var(name: Name,
+                 tpe: Type,
+                 comment: Comment,
+                 mods: Seq[Mod]) extends Decl
 
   //MethodDoc
   case class Def(name: Name,
                  returnType: Type,
                  inputs: Seq[Term.Param],
-
                  tparams: Seq[Type.Param],
                  comment: Comment,
-                 flags: Seq[Mod]) extends Decl
+                 mods: Seq[Mod]) extends Decl
 
 }
 
@@ -108,7 +107,7 @@ object Type {
               viewBounds: Seq[Type],
               contextBounds: Seq[Type]) extends Type
 
-  trait Arg extends Type.Arg with Tree
+  trait Arg extends Tree
 
 
 }
@@ -118,9 +117,9 @@ trait Term
 
 object Term {
 
-  case class Param(name: Name,
+  case class Param(name: String,
                    mods: Seq[Mod],
-                   decltpe: Option[Type]) extends Term
+                   decltpe: Type) extends Term
 
   // todo add default val
 
