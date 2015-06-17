@@ -1,7 +1,7 @@
 package newmodel
 
 import newmodel.Ctor.ConstructorDoc
-
+import newmodel.Template._
 
 // for now
 case class Comment(rawComment: String)
@@ -12,43 +12,50 @@ case class SourceFile(name: String)
 
 trait Tree
 
+trait Stat extends Tree
+
 //for now
 
 
-trait Defn extends Tree
+trait Defn extends Stat
 
 object Defn {
 
   case class Package(name: Name,
-                     elements: Seq[Tree],
+                     stats: Seq[Stat],
                      comment: Comment) extends Tree
 
 
   case class ObjectDoc(name: Name,
-                       members: Seq[Tree],
+                       template: Template,
                        comment: Comment,
                        mods: Seq[Mod],
                        file: SourceFile) extends Defn
 
   case class TraitDoc(name: Name,
-                      members: Seq[Tree],
+                      template: Template,
                       comment: Comment,
                       mods: Seq[Mod],
                       file: SourceFile) extends Defn
 
   case class ClassDoc(name: Name,
-                      members: Seq[Tree],
                       primaryConstructor: Option[ConstructorDoc],
-                      constructors: Seq[ConstructorDoc],
                       comment: Comment,
                       tparams: Seq[Type.Param],
                       mods: Seq[Mod],
                       file: SourceFile,
-                      companion: Option[ObjectDoc]) extends Defn
+                      template: Template) extends Defn
 
 }
 
-trait Ctor extends Tree
+
+object Template {
+
+  case class Template(stats: Seq[Stat])
+
+}
+
+trait Ctor extends Stat
 
 object Ctor {
 
@@ -59,7 +66,7 @@ object Ctor {
 
 }
 
-trait Decl extends Tree
+trait Decl extends Stat
 
 object Decl {
 
@@ -78,7 +85,7 @@ object Decl {
   //MethodDoc
   case class Def(name: Name,
                  returnType: Type,
-                 inputs: Seq[Term.Param],
+                 paramss: Seq[Term.Param],
                  tparams: Seq[Type.Param],
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl
