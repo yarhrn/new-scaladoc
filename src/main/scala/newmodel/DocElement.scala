@@ -23,7 +23,7 @@ object Defn {
 
   case class Package(name: Name,
                      stats: Seq[Stat],
-                     comment: Comment) extends Tree
+                     comment: Comment) extends Defn
 
 
   case class ObjectDoc(name: Name,
@@ -45,7 +45,7 @@ object Defn {
                       mods: Seq[Mod],
                       file: SourceFile,
                       template: Template,
-                      companion: ObjectDoc) extends Defn
+                      companion: Option[ObjectDoc]) extends Defn
 
 }
 

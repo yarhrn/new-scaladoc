@@ -45,7 +45,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def extractAllPackages(root: Package) = {
-    def loop(el: Package): Seq[Package] = el.elements.collect {
+    def loop(el: Package): Seq[Package] = el.stats.collect {
       case p: Package =>
         p +: loop(p)
     }.flatten
@@ -53,13 +53,13 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processPackage(pack: Package): String = {
-    val grouped: Map[String, Seq[Tree]] = pack.elements.groupBy {
+    val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
       case e: ClassDoc => "classes"
       case e: ObjectDoc => "objects"
       case e: TraitDoc => "traits"
       case e: Tree => "nvm"
     }
-    val objects = pack.elements.collect { case o: ObjectDoc => o }
+    val objects = pack.stats.collect { case o: ObjectDoc => o }
     processObjects(objects)
   }
 
@@ -77,8 +77,8 @@ object LatexDocGenerator extends DocGenerator {
     val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
-    val methodsSummary = processMethodsSummary(obj.members)
-    val methods = {obj.members.collect { case m: Def => processMethod(m) }.mkString("\n")}
+    val methodsSummary = processMethodsSummary(obj.template.stats)
+    val methods = {obj.template.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -106,9 +106,9 @@ object LatexDocGenerator extends DocGenerator {
       }""" 
   }
 
-  def dumpMethodInputs(e: Def): String = e.inputs.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: Def) = e.inputs.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
 
   def processMethod(m: Def): String = {
     val name = m.name
