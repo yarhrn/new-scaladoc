@@ -1,7 +1,6 @@
 package newmodel
 
-import newmodel.Ctor.ConstructorDoc
-import newmodel.Template._
+import newmodel.Ctor.Constructor
 
 // for now
 case class Comment(rawComment: String)
@@ -27,42 +26,38 @@ object Defn {
 
 
   case class Object(name: Name,
-                       template: Template,
-                       comment: Comment,
-                       mods: Seq[Mod],
-                       file: SourceFile) extends Defn
+                    template: Template,
+                    comment: Comment,
+                    mods: Seq[Mod],
+                    file: SourceFile) extends Defn
 
   case class Trait(name: Name,
-                      template: Template,
-                      comment: Comment,
-                      mods: Seq[Mod],
-                      tparams: Seq[Type.Param],
-                      file: SourceFile) extends Defn
+                   template: Template,
+                   comment: Comment,
+                   mods: Seq[Mod],
+                   tparams: Seq[Type.Param],
+                   file: SourceFile) extends Defn
 
   case class Class(name: Name,
-                      primaryConstructor: Option[ConstructorDoc],
-                      comment: Comment,
-                      tparams: Seq[Type.Param],
-                      mods: Seq[Mod],
-                      file: SourceFile,
-                      template: Template,
-                      companion: Option[Object]) extends Defn
+                   primaryConstructor: Option[Constructor],
+                   comment: Comment,
+                   tparams: Seq[Type.Param],
+                   mods: Seq[Mod],
+                   file: SourceFile,
+                   template: Template,
+                   companion: Option[Object]) extends Defn
 
 }
 
 
-object Template {
-
-  case class Template(stats: Seq[Stat])
-
-}
+case class Template(stats: Seq[Stat])
 
 trait Ctor extends Stat
 
 object Ctor {
 
   //ConstructorDoc
-  case class ConstructorDoc(name: Name,
+  case class Constructor(name: Name,
                             inputs: Seq[Term.Param],
                             comment: Comment) extends Ctor
 

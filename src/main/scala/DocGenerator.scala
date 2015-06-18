@@ -98,10 +98,10 @@ object LatexDocGenerator extends DocGenerator {
       }}""" 
   }
 
-  def processMethodsSummary(mehtods: Seq[Tree]): String = {
+  def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${mehtods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
       }""" 
   }

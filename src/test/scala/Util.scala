@@ -2,8 +2,7 @@
 
 import newmodel.Decl.Def
 import newmodel.Defn.{Object, Package}
-import newmodel.{Name,Type,Term,Comment,SourceFile}
-import newmodel.Template._
+import newmodel._
 
 
 /**
