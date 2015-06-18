@@ -1,7 +1,7 @@
 
 
 import newmodel.Decl.Def
-import newmodel.Defn.{Object, Package}
+import newmodel.Defn.{Object}
 import newmodel._
 
 
@@ -16,8 +16,8 @@ object Util {
     val barMethod = Def(Name("bar", 2), Type.Name("AnyRef"), Seq(Term.Param("z", Seq(), Type.Name("Object"))), Seq(), Comment("good method2!"), Seq())
     val bar1Method = Def(Name("bar23", 2), Type.Name("Object"), Seq(), Seq(), Comment("good method3!"), Seq())
     val barObject = Object(Name("Bar", 115), Template(Seq(barMethod, bar1Method)), Comment("Awesome bar object with two methods"), Seq(), SourceFile("test"))
-    val orgPackage = Package(Name("org", 213), List(testObject, barObject), Comment("Lorem ipsum!"))
-    val rootPackage = Package(Name("_root_", 33), Seq(orgPackage), Comment(""))
+    val orgPackage = Pkg(Name("org", 213), List(testObject, barObject), Comment("Lorem ipsum!"))
+    val rootPackage = Pkg(Name("_root_", 33), Seq(orgPackage), Comment(""))
     rootPackage
   }
 }

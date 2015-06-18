@@ -20,34 +20,37 @@ trait Defn extends Stat
 
 object Defn {
 
-  case class Package(name: Name,
-                     stats: Seq[Stat],
-                     comment: Comment) extends Defn
+
 
 
   case class Object(name: Name,
-                    template: Template,
+                    templ: Template,
                     comment: Comment,
                     mods: Seq[Mod],
                     file: SourceFile) extends Defn
 
   case class Trait(name: Name,
-                   template: Template,
+                   templ: Template,
                    comment: Comment,
                    mods: Seq[Mod],
                    tparams: Seq[Type.Param],
                    file: SourceFile) extends Defn
 
   case class Class(name: Name,
-                   primaryConstructor: Option[Constructor],
+                   ctor: Option[Constructor],
                    comment: Comment,
                    tparams: Seq[Type.Param],
                    mods: Seq[Mod],
                    file: SourceFile,
-                   template: Template,
+                   templ: Template,
                    companion: Option[Object]) extends Defn
-
 }
+
+case class Pkg(name: Name,
+               stats: Seq[Stat],
+               comment: Comment) extends Defn
+
+
 
 
 case class Template(stats: Seq[Stat])
@@ -58,7 +61,7 @@ object Ctor {
 
   //ConstructorDoc
   case class Constructor(name: Name,
-                            inputs: Seq[Term.Param],
+                            paramss: Seq[Term.Param],
                             comment: Comment) extends Ctor
 
 }
@@ -69,19 +72,19 @@ object Decl {
 
   //ValDoc
   case class Val(name: Name,
-                 tpe: Type,
+                 decltpe: Type,
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl
 
   //VarDoc
   case class Var(name: Name,
-                 tpe: Type,
+                 decltpe: Type,
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl
 
   //MethodDoc
   case class Def(name: Name,
-                 returnType: Type,
+                 decltpe: Type,
                  paramss: Seq[Term.Param],
                  tparams: Seq[Type.Param],
                  comment: Comment,

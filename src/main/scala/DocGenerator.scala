@@ -1,14 +1,14 @@
 import newmodel.Decl.Def
-import newmodel.Defn.{Trait, Object, Class,Package}
+import newmodel.Defn.{Trait, Object, Class}
 import newmodel._
 
 
 trait DocGenerator {
-  def generate(root: Package): String
+  def generate(root: Pkg): String
 }
 
 object PlainStringGenerator extends DocGenerator {
-  override def generate(root: Package): String = {
+  override def generate(root: Pkg): String = {
     /* println("Root package")
      def modelHandler(doc: DocElement): String = {
        def valParamsToStr(inputs: Seq[ValueParam]) =
@@ -36,23 +36,23 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
-  override def generate(root: Package) = {
+  override def generate(root: Pkg) = {
     latexHeader + processDocTree(root) + latexEnder
   }
 
-  def processDocTree(root: Package): String = {
+  def processDocTree(root: Pkg): String = {
     extractAllPackages(root).map(processPackage).mkString("\n")
   }
 
-  def extractAllPackages(root: Package) = {
-    def loop(el: Package): Seq[Package] = el.stats.collect {
-      case p: Package =>
+  def extractAllPackages(root: Pkg) = {
+    def loop(el: Pkg): Seq[Pkg] = el.stats.collect {
+      case p: Pkg =>
         p +: loop(p)
     }.flatten
     loop(root)
   }
 
-  def processPackage(pack: Package): String = {
+  def processPackage(pack: Pkg): String = {
     val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
       case e: Class => "classes"
       case e: Object => "objects"
@@ -77,8 +77,8 @@ object LatexDocGenerator extends DocGenerator {
     val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
-    val methodsSummary = processMethodsSummary(obj.template.stats)
-    val methods = {obj.template.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
+    val methodsSummary = processMethodsSummary(obj.templ.stats)
+    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -112,7 +112,7 @@ object LatexDocGenerator extends DocGenerator {
 
   def processMethod(m: Def): String = {
     val name = m.name
-    val returnType = m.returnType
+    val returnType = m.decltpe
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
     s"""\\item{
