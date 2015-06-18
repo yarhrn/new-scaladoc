@@ -44,7 +44,8 @@ object Defn {
                       tparams: Seq[Type.Param],
                       mods: Seq[Mod],
                       file: SourceFile,
-                      template: Template) extends Defn
+                      template: Template,
+                      companion: ObjectDoc) extends Defn
 
 }
 
