@@ -1,5 +1,5 @@
 import newmodel.Decl.Def
-import newmodel.Defn.{TraitDoc, ObjectDoc, ClassDoc,Package}
+import newmodel.Defn.{Trait, Object, Class,Package}
 import newmodel._
 
 
@@ -54,16 +54,16 @@ object LatexDocGenerator extends DocGenerator {
 
   def processPackage(pack: Package): String = {
     val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
-      case e: ClassDoc => "classes"
-      case e: ObjectDoc => "objects"
-      case e: TraitDoc => "traits"
+      case e: Class => "classes"
+      case e: Object => "objects"
+      case e: Trait => "traits"
       case e: Tree => "nvm"
     }
-    val objects = pack.stats.collect { case o: ObjectDoc => o }
+    val objects = pack.stats.collect { case o: Object => o }
     processObjects(objects)
   }
 
-  def processObjects(classes: Seq[ObjectDoc]) = {
+  def processObjects(classes: Seq[Object]) = {
     """\chapter{Package org}{
        \label{org}\hskip -.05in
        \hbox to \hsize{\textit{ Package Contents\hfil Page}}
@@ -73,7 +73,7 @@ object LatexDocGenerator extends DocGenerator {
       classes.map(processObject).mkString("\n")
   }
 
-  def processObject(obj: ObjectDoc): String = {
+  def processObject(obj: Object): String = {
     val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment

@@ -26,26 +26,27 @@ object Defn {
                      comment: Comment) extends Defn
 
 
-  case class ObjectDoc(name: Name,
+  case class Object(name: Name,
                        template: Template,
                        comment: Comment,
                        mods: Seq[Mod],
                        file: SourceFile) extends Defn
 
-  case class TraitDoc(name: Name,
+  case class Trait(name: Name,
                       template: Template,
                       comment: Comment,
                       mods: Seq[Mod],
+                      tparams: Seq[Type.Param],
                       file: SourceFile) extends Defn
 
-  case class ClassDoc(name: Name,
+  case class Class(name: Name,
                       primaryConstructor: Option[ConstructorDoc],
                       comment: Comment,
                       tparams: Seq[Type.Param],
                       mods: Seq[Mod],
                       file: SourceFile,
                       template: Template,
-                      companion: Option[ObjectDoc]) extends Defn
+                      companion: Option[Object]) extends Defn
 
 }
 
