@@ -1,75 +1,173 @@
 package newmodel
 
-case class ID(qualifiedName: String)
+import newmodel.Ctor.Constructor
 
 // for now
 case class Comment(rawComment: String)
 
+case class Name(name: String, hash: Int)
+
 case class SourceFile(name: String)
 
-//for now
-trait DocElement {
-  def id: ID
+trait Tree
 
-  def comment: Comment
+trait Stat extends Tree
+
+//for now
+
+
+trait Defn extends Stat
+
+object Defn {
+
+
+
+
+  case class Object(name: Name,
+                    templ: Template,
+                    comment: Comment,
+                    mods: Seq[Mod],
+                    file: SourceFile) extends Defn
+
+  case class Trait(name: Name,
+                   templ: Template,
+                   comment: Comment,
+                   mods: Seq[Mod],
+                   tparams: Seq[Type.Param],
+                   file: SourceFile) extends Defn
+
+  case class Class(name: Name,
+                   ctor: Option[Constructor],
+                   comment: Comment,
+                   tparams: Seq[Type.Param],
+                   mods: Seq[Mod],
+                   file: SourceFile,
+                   templ: Template,
+                   companion: Option[Object]) extends Defn
+}
+
+case class Pkg(name: Name,
+               stats: Seq[Stat],
+               comment: Comment) extends Defn
+
+
+
+
+case class Template(stats: Seq[Stat])
+
+trait Ctor extends Stat
+
+object Ctor {
+
+  //ConstructorDoc
+  case class Constructor(name: Name,
+                            paramss: Seq[Term.Param],
+                            comment: Comment) extends Ctor
+
+}
+
+trait Decl extends Stat
+
+object Decl {
+
+  //ValDoc
+  case class Val(name: Name,
+                 decltpe: Type,
+                 comment: Comment,
+                 mods: Seq[Mod]) extends Decl
+
+  //VarDoc
+  case class Var(name: Name,
+                 decltpe: Type,
+                 comment: Comment,
+                 mods: Seq[Mod]) extends Decl
+
+  //MethodDoc
+  case class Def(name: Name,
+                 decltpe: Type,
+                 paramss: Seq[Term.Param],
+                 tparams: Seq[Type.Param],
+                 comment: Comment,
+                 mods: Seq[Mod]) extends Decl
+
 }
 
 
+trait Type extends Tree
 
-case class Package(name: String,
-                   elements: Seq[DocElement],
-                   id: ID,
-                   comment: Comment) extends DocElement
+object Type {
 
-case class ValueParam(name: String,
-                      paramType: Type,
-                      implicitly: Option[Implicit],
-                      id: ID,
-                      comment: Comment) extends DocElement
+  case class Name(name: String) extends Type
 
-case class ConstructorDoc(name: String,
-                          inputs: Seq[ValueParam],
-                          id: ID,
-                          comment: Comment) extends DocElement
+  sealed trait Variance
 
-case class MethodDoc(name: String,
-                     returnType: Type,
-                     inputs: Seq[ValueParam],
-                     id: ID,
-                     comment: Comment,
-                     flags: Seq[Flag]) extends DocElement
+  sealed case class Covariance() extends Variance
 
-case class ValDoc(name: String,
-                  returnType: Type,
-                  id: ID,
-                  comment: Comment,
-                  flags: Seq[Flag]) extends DocElement
+  sealed case class Contravariance() extends Variance
 
-case class ObjectDoc(name: String,
-                     members: Seq[DocElement],
-                     id: ID, comment: Comment,
-                     file: SourceFile) extends DocElement
+  class Bounds(lo: Option[Type], hi: Option[Type])
 
-case class TraitDoc(name: String,
-                    members: Seq[DocElement],
-                    id: ID,
-                    comment: Comment,
-                    file: SourceFile) extends DocElement
+  class Param(variance: Option[Variance],
+              name: Type.Name,
+              tparams: Seq[Type.Param],
+              typeBounds: Type.Bounds,
+              viewBounds: Seq[Type],
+              contextBounds: Seq[Type]) extends Type
 
-case class ClassDoc(name: String,
-                    members: Seq[DocElement],
-                    primaryConstructor: Option[ConstructorDoc],
-                    constructors: Seq[ConstructorDoc],
-                    id: ID,
-                    comment: Comment,
-                    isCaseClass: Boolean,
-                    file: SourceFile,
-                    companion:Option[ObjectDoc]) extends DocElement
+  trait Arg extends Tree
 
 
+}
 
-case class Type(name: String)
 
-case class ImplicitConversions(from: Type,
-                               to: Type,
-                               id: ID, comment: Comment) extends DocElement
+trait Term
+
+object Term {
+
+  case class Param(name: String,
+                   mods: Seq[Mod],
+                   decltpe: Type) extends Term
+
+  // todo add default val
+
+}
+
+
+trait Mod extends Tree
+
+object Mod {
+
+  class Annot() extends Mod
+
+  class Private() extends Mod
+
+  // todo should be   class Private(within: Name.Qualifier)
+
+  class Protected() extends Mod
+
+  class Implicit() extends Mod
+
+  class Final() extends Mod
+
+  class Sealed() extends Mod
+
+  class Override() extends Mod
+
+  class Case() extends Mod
+
+  class Abstract() extends Mod
+
+  class Covariant() extends Mod
+
+  class Contravariant() extends Mod
+
+  class Lazy() extends Mod
+
+  class ValParam() extends Mod
+
+  class VarParam() extends Mod
+
+  class Ffi(signature: String) extends Mod
+
+}
+

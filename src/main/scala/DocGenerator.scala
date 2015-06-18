@@ -1,12 +1,14 @@
+import newmodel.Decl.Def
+import newmodel.Defn.{Trait, Object, Class}
 import newmodel._
 
 
 trait DocGenerator {
-  def generate(root: Package): String
+  def generate(root: Pkg): String
 }
 
 object PlainStringGenerator extends DocGenerator {
-  override def generate(root: Package): String = {
+  override def generate(root: Pkg): String = {
     /* println("Root package")
      def modelHandler(doc: DocElement): String = {
        def valParamsToStr(inputs: Seq[ValueParam]) =
@@ -34,34 +36,34 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
-  override def generate(root: Package) = {
+  override def generate(root: Pkg) = {
     latexHeader + processDocTree(root) + latexEnder
   }
 
-  def processDocTree(root: Package): String = {
+  def processDocTree(root: Pkg): String = {
     extractAllPackages(root).map(processPackage).mkString("\n")
   }
 
-  def extractAllPackages(root: Package) = {
-    def loop(el: Package): Seq[Package] = el.elements.collect {
-      case p: Package =>
+  def extractAllPackages(root: Pkg) = {
+    def loop(el: Pkg): Seq[Pkg] = el.stats.collect {
+      case p: Pkg =>
         p +: loop(p)
     }.flatten
     loop(root)
   }
 
-  def processPackage(pack: Package): String = {
-    val grouped: Map[String, Seq[DocElement]] = pack.elements.groupBy {
-      case e: ClassDoc => "classes"
-      case e: ObjectDoc => "objects"
-      case e: TraitDoc => "traits"
-      case e: DocElement => "nvm"
+  def processPackage(pack: Pkg): String = {
+    val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
+      case e: Class => "classes"
+      case e: Object => "objects"
+      case e: Trait => "traits"
+      case e: Tree => "nvm"
     }
-    val objects = pack.elements.collect { case o: ObjectDoc => o }
+    val objects = pack.stats.collect { case o: Object => o }
     processObjects(objects)
   }
 
-  def processObjects(classes: Seq[ObjectDoc]) = {
+  def processObjects(classes: Seq[Object]) = {
     """\chapter{Package org}{
        \label{org}\hskip -.05in
        \hbox to \hsize{\textit{ Package Contents\hfil Page}}
@@ -71,12 +73,12 @@ object LatexDocGenerator extends DocGenerator {
       classes.map(processObject).mkString("\n")
   }
 
-  def processObject(obj: ObjectDoc): String = {
-    val qualifiedName = obj.id.qualifiedName
+  def processObject(obj: Object): String = {
+    val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
-    val methodsSummary = processMethodsSummary(obj.members)
-    val methods = {obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")}
+    val methodsSummary = processMethodsSummary(obj.templ.stats)
+    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -96,21 +98,21 @@ object LatexDocGenerator extends DocGenerator {
       }}""" 
   }
 
-  def processMethodsSummary(mehtods: Seq[DocElement]): String = {
+  def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${mehtods.collect { case e: MethodDoc => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
       }""" 
   }
 
-  def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + " : " + input.paramType.name).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
 
-  def processMethod(m: MethodDoc): String = {
+  def processMethod(m: Def): String = {
     val name = m.name
-    val returnType = m.returnType
+    val returnType = m.decltpe
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
     s"""\\item{
