@@ -79,8 +79,6 @@ object LatexDocGenerator extends DocGenerator {
     val comment = obj.comment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
     val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
-      obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")
-    }
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -121,7 +119,7 @@ object LatexDocGenerator extends DocGenerator {
       \\index{$name()}
       {\\bf  $name}
       \\begin{lstlisting}[frame=none]
-        def $name$tpes($signature):$returnType\\end{lstlisting}
+        def $name($signature):$returnType\\end{lstlisting}
       \\begin{itemize}
       \\item{
       {\\bf  Description}
