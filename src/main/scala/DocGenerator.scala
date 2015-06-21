@@ -1,12 +1,14 @@
+import newmodel.Decl.Def
+import newmodel.Defn.{Trait, Object, Class}
 import newmodel._
 
 
 trait DocGenerator {
-  def generate(root: Package, index: Index): String
+  def generate(root: Pkg): String
 }
 
 object PlainStringGenerator extends DocGenerator {
-  override def generate(root: Package, index: Index): String = {
+  override def generate(root: Pkg): String = {
     /* println("Root package")
      def modelHandler(doc: DocElement): String = {
        def valParamsToStr(inputs: Seq[ValueParam]) =
@@ -34,50 +36,34 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
-  override def generate(root: Package, index: Index) = {
-
-
+  override def generate(root: Pkg) = {
     latexHeader + processDocTree(root) + latexEnder
   }
 
-  def processDocTree(root: Package): String = {
+  def processDocTree(root: Pkg): String = {
     extractAllPackages(root).map(processPackage).mkString("\n")
   }
 
-  def extractAllPackages(root: Package) = {
-    def loop(el: Package): Seq[Package] = el.elements.collect {
-      case p: Package =>
+  def extractAllPackages(root: Pkg) = {
+    def loop(el: Pkg): Seq[Pkg] = el.stats.collect {
+      case p: Pkg =>
         p +: loop(p)
     }.flatten
     loop(root)
   }
 
-  def processPackage(pack: Package): String = {
-    val grouped: Map[String, Seq[DocElement]] = pack.elements.groupBy {
-      case e: ClassDoc => "classes"
-      case e: ObjectDoc => "objects"
-      case e: TraitDoc => "traits"
-      case e: DocElement => "nvm"
+  def processPackage(pack: Pkg): String = {
+    val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
+      case e: Class => "classes"
+      case e: Object => "objects"
+      case e: Trait => "traits"
+      case e: Tree => "nvm"
     }
-    processObjects(grouped("objects").map(_.asInstanceOf[ObjectDoc]))
+    val objects = pack.stats.collect { case o: Object => o }
+    processObjects(objects)
   }
 
-  def dumpTypeParam(tp: TypeParam) = {
-    def process(tpe: Option[Type], bound: String) = tpe.map(bound + _.name).getOrElse("")
-    tp.variance.map { case _: Covariance => "+"; case _: Contravariance => "-" }.getOrElse("") +
-      tp.name +
-      process(tp.lowerBound, " >: ") +
-      process(tp.upperBound, " <: ")
-  }
-
-  def dumpTypeParams(tps: Seq[TypeParam]) = {
-    val params = tps.map(dumpTypeParam).mkString(", ")
-    if (params.nonEmpty) {
-      s"[$params]"
-    } else ""
-  }
-
-  def processObjects(classes: Seq[ObjectDoc]) = {
+  def processObjects(classes: Seq[Object]) = {
     """\chapter{Package org}{
        \label{org}\hskip -.05in
        \hbox to \hsize{\textit{ Package Contents\hfil Page}}
@@ -87,12 +73,12 @@ object LatexDocGenerator extends DocGenerator {
       classes.map(processObject).mkString("\n")
   }
 
-  def processObject(obj: ObjectDoc): String = {
-    val qualifiedName = obj.id.qualifiedName
+  def processObject(obj: Object): String = {
+    val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
-    val methodsSummary = processMethodsSummary(obj.members)
-    val methods = {
+    val methodsSummary = processMethodsSummary(obj.templ.stats)
+    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
       obj.members.collect { case m: MethodDoc => processMethod(m) }.mkString("\n")
     }
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
@@ -111,27 +97,26 @@ object LatexDocGenerator extends DocGenerator {
       \\begin{itemize}
       $methods
       \\end{itemize}
-      }}""".stripMargin
+      }}""" 
   }
 
-  def processMethodsSummary(mehtods: Seq[DocElement]): String = {
+  def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${mehtods.collect { case e: MethodDoc => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
-      }""".stripMargin
+      }""" 
   }
 
-  def dumpMethodInputs(e: MethodDoc): String = e.inputs.map(_.paramType.name).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: MethodDoc) = e.inputs.map((input) => input.name + ": " + input.paramType.name).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
 
-  def processMethod(m: MethodDoc): String = {
+  def processMethod(m: Def): String = {
     val name = m.name
-    val returnType = m.returnType.name
+    val returnType = m.decltpe
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
-    val tpes = dumpTypeParams(m.typeParams)
     s"""\\item{
       \\index{$name()}
       {\\bf  $name}
@@ -142,7 +127,7 @@ object LatexDocGenerator extends DocGenerator {
       {\\bf  Description}
        $comment
       }
-      \\end{itemize}}""".stripMargin
+      \\end{itemize}}""" 
   }
 
 
@@ -197,6 +182,5 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def latexEnder: String = """\printindex
-                      \end{document}
-                           """
+                      \end{document}"""
 }
