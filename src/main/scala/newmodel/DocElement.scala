@@ -74,7 +74,6 @@ object Decl {
                  decltpe: Type,
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl
-                    typeParams: Seq[TypeParam]) extends DocElement
 
   //VarDoc
   case class Var(name: Name,
