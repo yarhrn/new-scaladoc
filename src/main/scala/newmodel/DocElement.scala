@@ -103,9 +103,9 @@ object Type {
 
   sealed case class Contravariance() extends Variance
 
-  class Bounds(lo: Option[Type], hi: Option[Type])
+  case class Bounds(lo: Option[Type], hi: Option[Type])
 
-  class Param(variance: Option[Variance],
+  case class Param(variance: Option[Variance],
               name: Type.Name,
               tparams: Seq[Type.Param],
               typeBounds: Type.Bounds,
