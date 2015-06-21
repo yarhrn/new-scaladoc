@@ -20,9 +20,6 @@ trait Defn extends Stat
 
 object Defn {
 
-
-
-
   case class Object(name: Name,
                     templ: Template,
                     comment: Comment,

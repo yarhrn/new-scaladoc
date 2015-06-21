@@ -21,10 +21,11 @@ case class Index(root: Pkg) {
       case e: Defn.Trait => mapper(e.templ.stats)
       case e: Defn.Object => mapper(e.templ.stats)
       case e: Pkg => mapper(e.stats)
+      case e: Decl.Def => Seq(e)
       case _ => Seq()
     }
     node match {
-      case _: Defn.Class | _: Defn.Trait | _: Defn.Object | _: Pkg => nodes ++ Seq(node)
+      case _: Defn.Class | _: Defn.Trait | _: Defn.Object | _: Pkg | _:Decl.Def => nodes ++ Seq(node)
       case _ => nodes
     }
   }
