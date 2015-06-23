@@ -2,6 +2,7 @@
 
 import newmodel.Decl.Def
 import newmodel.Defn.{Object}
+
 import newmodel._
 
 
@@ -9,8 +10,15 @@ import newmodel._
  * Created by yaroslav on 09.06.2015.*/
 object Util {
   def model1 = {
+    import newmodel.Mod.Covariant
+
+    val tparam = Type.Param(Seq(Covariant()),Type.Name("A"),Seq(),
+      Type.Bounds(
+        Some(Type.Name("Seq[Any]")),
+        Some(Type.Param(Seq.empty[Mod],Type.Name("Bar"),Seq(),Type.Bounds(Option.empty,Option.empty),Seq(),Seq())))
+      ,Seq(),Seq());
     val fooMethod = Def(Name("foo", 1), Type.Name("String"), Seq(Term.Param("a", Seq(), Type.Name("String"))), Seq(), Comment("Cool method!"), Seq())
-    val fooMethod1 = Def(Name("foo12", 2), Type.Name("String"), Seq(Term.Param("a", Seq(), Type.Name("Any"))), Seq(), Comment("good method!"), Seq())
+    val fooMethod1 = Def(Name("foo12", 2), Type.Name("String"), Seq(Term.Param("a", Seq(), Type.Name("Any"))), Seq(tparam), Comment("good method!"), Seq())
     val testObject = Object(Name("Test", 23123), Template(Seq(fooMethod, fooMethod1)), Comment("Awesome test class with two methods"), Seq(), SourceFile("test1"))
 
     val barMethod = Def(Name("bar", 2), Type.Name("AnyRef"), Seq(Term.Param("z", Seq(), Type.Name("Object"))), Seq(), Comment("good method2!"), Seq())
