@@ -1,5 +1,5 @@
 import newmodel.Decl.Def
-import newmodel.Defn.{Trait, Object, Class}
+import newmodel.Defn.{Class, Object, Trait}
 import newmodel._
 
 
@@ -74,11 +74,12 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processObject(obj: Object): String = {
+    val mods = Util.mods2str(obj.mods)
     val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
-    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
+    val methods = obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -87,7 +88,7 @@ object LatexDocGenerator extends DocGenerator {
       $comment
       \\subsection{Declaration}{
       \\begin{lstlisting}[frame=none]
-      object ${obj.name}
+      $mods object ${obj.name}
       \\end{lstlisting}
       $methodsSummary
       \\subsection{Methods}{
@@ -95,7 +96,7 @@ object LatexDocGenerator extends DocGenerator {
       \\begin{itemize}
       $methods
       \\end{itemize}
-      }}""" 
+      }}"""
   }
 
   def processMethodsSummary(methods: Seq[Tree]): String = {
@@ -103,14 +104,15 @@ object LatexDocGenerator extends DocGenerator {
       \\begin{verse}
         ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
-      }""" 
+      }"""
   }
 
   def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => s"${Util.mods2str(input.mods)} ${input.name} ${input.decltpe.asInstanceOf[Type.Name]}").mkString(", ")
 
   def processMethod(m: Def): String = {
+    val mods = Util.mods2str(m.mods)
     val name = m.name
     val returnType = m.decltpe
     val comment = m.comment.rawComment
@@ -119,13 +121,13 @@ object LatexDocGenerator extends DocGenerator {
       \\index{$name()}
       {\\bf  $name}
       \\begin{lstlisting}[frame=none]
-        def $signature($signature) : $returnType\\end{lstlisting}
+        $mods def $signature($signature) : $returnType\\end{lstlisting}
       \\begin{itemize}
       \\item{
       {\\bf  Description}
        $comment
       }
-      \\end{itemize}}""" 
+      \\end{itemize}}"""
   }
 
 
@@ -176,7 +178,8 @@ object LatexDocGenerator extends DocGenerator {
                        \\sloppy
                        \\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}
                        \\tableofcontents
-                    """}
+                    """
+  }
 
   def latexEnder: String = """\printindex
                       \end{document}"""
