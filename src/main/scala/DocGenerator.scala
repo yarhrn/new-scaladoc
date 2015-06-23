@@ -116,7 +116,7 @@ object LatexDocGenerator extends DocGenerator {
 
 
   def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
-    "\\begin{multicols}{2}}\\noindent\n" +
+    "\\begin{multicols}{2}\\noindent\n" +
       elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
       "\\end{multicols}"
   }
