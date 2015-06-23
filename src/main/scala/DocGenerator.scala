@@ -36,8 +36,14 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
+
+
   override def generate(root: Pkg) = {
-    latexHeader + processDocTree(root) + latexEnder
+    latexHeader + processDocTree(root) + generateIndex(Index(root)) + latexEnder
+  }
+
+  def generateIndex(index: Index): String = {
+    "\\newpage\n" + "Generated INDEX" + indexForObjects(index) + "\n"
   }
 
   def processDocTree(root: Pkg): String = {
@@ -108,14 +114,9 @@ object LatexDocGenerator extends DocGenerator {
       }"""
   }
 
-  def indexObjects(index: Index): String = {
-    "\\begin{multicols}{2}\n" +
-      index.objects.map(e => s"{${e.name.name}\\ref{${e.name.name}_object}\\\\}").mkString("\n") + "\n" +
-      "\\end{multicols}"
-  }
 
   def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
-    "\\begin{multicols}{2}\n" +
+    "\\begin{multicols}{2}}\\noindent\n" +
       elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
       "\\end{multicols}"
   }
@@ -123,14 +124,17 @@ object LatexDocGenerator extends DocGenerator {
   def indexForMethods(index: Index): String = {
     commonIndex(index.defs, e => e.name)
   }
+
   def indexForObjects(index: Index): String = {
-    commonIndex(index.defs, e => s"${e.name}_object")
+    commonIndex(index.objects, e => s"${e.name}_object")
   }
+
   def indexForClasses(index: Index): String = {
-    commonIndex(index.defs, e => s"${e.name}_class")
+    commonIndex(index.classes, e => s"${e.name}_class")
   }
+
   def indexForTraits(index: Index): String = {
-    commonIndex(index.defs, e => s"${e.name}_trait")
+    commonIndex(index.traits, e => s"${e.name}_trait")
   }
 
   def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
@@ -166,6 +170,7 @@ object LatexDocGenerator extends DocGenerator {
                        ${slash}usepackage{ifpdf}
                        ${slash}usepackage[headings]{fullpage}
                        ${slash}usepackage{listings}
+                       ${slash}usepackage{multicol}
                        \\lstset{language=Java,breaklines=true}
                        \\ifpdf ${slash}usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
                          ${slash}usepackage[pdftex]{graphicx}
