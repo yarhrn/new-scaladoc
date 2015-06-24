@@ -74,7 +74,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processObject(obj: Object): String = {
-    val mods = Util.mods2str(obj.mods)
+    val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val qualifiedName = obj.name.name
     val name = obj.name
     val comment = obj.comment
@@ -109,10 +109,10 @@ object LatexDocGenerator extends DocGenerator {
 
   def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: Def) = e.paramss.map((input) => s"${Util.mods2str(input.mods)} ${input.name} ${input.decltpe.asInstanceOf[Type.Name]}").mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => s"${e.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")} ${input.name} ${input.decltpe.asInstanceOf[Type.Name]}").mkString(", ")
 
   def processMethod(m: Def): String = {
-    val mods = Util.mods2str(m.mods)
+    val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val name = m.name
     val returnType = m.decltpe
     val comment = m.comment.rawComment
