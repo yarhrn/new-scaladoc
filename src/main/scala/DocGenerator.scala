@@ -1,5 +1,6 @@
 import newmodel.Decl.Def
-import newmodel.Defn.{Trait, Object, Class}
+import newmodel.Defn.{Class, Object, Trait}
+import newmodel.Mod.{Contravariant, Covariant}
 import newmodel._
 
 
@@ -81,8 +82,8 @@ object LatexDocGenerator extends DocGenerator {
 
   def processObject(obj: Object): String = {
     val qualifiedName = obj.name.name
-    val name = obj.name
-    val comment = obj.comment
+    val name = obj.name.name
+    val comment = obj.comment.rawComment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
     val methods = {
       obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
@@ -95,7 +96,7 @@ object LatexDocGenerator extends DocGenerator {
       $comment
       \\subsection{Declaration}{
       \\begin{lstlisting}[frame=none]
-      object ${obj.name}
+      object $name
       \\end{lstlisting}
       $methodsSummary
       \\subsection{Methods}{
@@ -106,15 +107,38 @@ object LatexDocGenerator extends DocGenerator {
       }}"""
   }
 
+  def dumpTypeParam(tp: Type.Param): String = {
+    def process(tpe: Option[Type], bound: String) = tpe.collect {
+      case e: Type.Name => bound + e.name
+      case e: Type.Param => bound + dumpTypeParam(e)
+    }.getOrElse("")
+
+    tp.mods.map { case _: Covariant => "+"; case _: Contravariant => "-" case _ => "" }.mkString("") +
+      tp.name.name + dumpTypeParams(tp.tparams) +
+      process(tp.typeBounds.lo, " >: ") +
+      process(tp.typeBounds.hi, " <: ") +
+      tp.contextBounds.collect { case e: Type.Name => s": ${e.name}" }.mkString(" ") +
+      tp.viewBounds.collect { case e: Type.Name => s"<% ${e.name}" }.mkString(" ")
+
+
+  }
+
+  def dumpTypeParams(tps: Seq[Type.Param]) = {
+    val params = tps.map(dumpTypeParam).mkString(", ")
+    if (params.nonEmpty) {
+      s"[$params]"
+    } else ""
+  }
+
   def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${methods.collect { case e: Def => s"{\\bf def ${e.name.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
       }"""
   }
 
-
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name].name).mkString(",")
   def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
     "\\begin{multicols}{2}\\noindent\n" +
       elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
@@ -137,20 +161,24 @@ object LatexDocGenerator extends DocGenerator {
     commonIndex(index.traits, e => s"${e.name}_trait")
   }
 
-  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
 
-  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name]).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name].name).mkString(", ")
 
   def processMethod(m: Def): String = {
-    val name = m.name
-    val returnType = m.decltpe
+
+    val name = m.name.name
+    val returnType = m.decltpe match {
+      case e: Type.Name => e.name
+      case _ => "ERROR" //todo add handling
+    }
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
+    val tparams = dumpTypeParams(m.tparams)
     s"""\\item{
       \\index{$name()}
       {\\bf  $name}
       \\begin{lstlisting}[frame=none]
-        def $signature($signature) : $returnType\\end{lstlisting}
+        def $name$tparams($signature):$returnType\\end{lstlisting}
       \\begin{itemize}
       \\item{
       {\\bf  Description}
