@@ -57,7 +57,7 @@ object Ctor {
 
   //ConstructorDoc
   case class Constructor(name: Name,
-                         paramss: Seq[Term.Param],
+                         paramss: Seq[Seq[Term.Param]],
                          comment: Comment) extends Ctor
 
 }
@@ -81,7 +81,7 @@ object Decl {
   //MethodDoc
   case class Def(name: Name,
                  decltpe: Type,
-                 paramss: Seq[Term.Param],
+                 paramss: Seq[Seq[Term.Param]],
                  tparams: Seq[Type.Param],
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl

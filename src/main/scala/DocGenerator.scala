@@ -138,7 +138,7 @@ object LatexDocGenerator extends DocGenerator {
       }"""
   }
 
-  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name].name).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
   def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
     "\\begin{multicols}{2}\\noindent\n" +
       elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
@@ -162,7 +162,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
 
-  def dumpSignature(e: Def) = e.paramss.map((input) => input.name + " : " + input.decltpe.asInstanceOf[Type.Name].name).mkString(", ")
+  def dumpSignature(e: Def) = e.paramss.map(_.map(e => e.name + " : " + e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
 
   def processMethod(m: Def): String = {
 
