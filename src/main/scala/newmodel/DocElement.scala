@@ -49,7 +49,7 @@ case class Pkg(name: Name,
                comment: Comment) extends Defn
 
 
-case class Template(stats: Seq[Stat])
+case class Template(stats: Option[Seq[Stat]])
 
 trait Ctor extends Stat
 
@@ -80,7 +80,7 @@ object Decl {
 
   //MethodDoc
   case class Def(name: Name,
-                 decltpe: Type,
+                 decltpe: Option[Type],
                  paramss: Seq[Seq[Term.Param]],
                  tparams: Seq[Type.Param],
                  comment: Comment,
@@ -117,7 +117,7 @@ object Term {
 
   case class Param(name: String,
                    mods: Seq[Mod],
-                   decltpe: Type) extends Term
+                   decltpe: Option[Type]) extends Term
 
   // todo add default val
 
