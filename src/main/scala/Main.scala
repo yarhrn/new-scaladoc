@@ -1,7 +1,8 @@
+import metaexample.bar
 
 object Main {
   def main(args: Array[String]): Unit = {
-
+    bar
   }
 }
 

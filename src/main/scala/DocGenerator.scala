@@ -84,7 +84,7 @@ object LatexDocGenerator extends DocGenerator {
     val qualifiedName = obj.name.name
     val name = obj.name.name
     val comment = obj.comment.rawComment
-    val methodsSummary = processMethodsSummary(obj.templ.stats)
+    val methodsSummary = processMethodsSummary(obj.templ.stats.get)
     val methods = {
       obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     }

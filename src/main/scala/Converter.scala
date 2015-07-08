@@ -1,22 +1,27 @@
 import scala.meta.dialects.Scala211
+import scala.meta.internal.ast.Defn
+import scala.meta.ui.Structure
 import scala.meta.{Scalahost, _}
+import scala.meta.semantic.Api
+import scala.meta.syntactic.Api
 
 object Runtime extends App {
+
+//  implicit val c = Scalahost.mkStandaloneContext(s"-cp $scalaLibraryPath")
+//
+//  class foo
+//
+//  println(z.show[Semantics] )
+//  println(z.asInstanceOf[Defn.Object].templ.parents(0).asInstanceOf[Ctor.Name].defs)
+
+
   val scalaLibraryJar = classOf[App].getProtectionDomain().getCodeSource()
   val scalaLibraryPath = scalaLibraryJar.getLocation().getFile()
-  implicit val c = Scalahost.mkStandaloneContext(s"-cp $scalaLibraryPath")
-
-  class foo
-
-  val z =
-    q"""object z{
-          val z = 12
-          def a = {
-            val k = 22
-            k
-          }
-        }
-     """
+  val pathToSource = ""
+  val pathToCompiledClasses = ""
+  implicit val cc = Scalahost.mkProjectContext("D:\\metaexample\\src",
+    s"$scalaLibraryPath;D:\\metaexample\\classes")
+  println(cc.project.sources)
 
 
   import scala.meta.internal.ast._

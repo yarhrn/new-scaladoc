@@ -17,9 +17,9 @@ case class Index(root: Pkg) {
 
   private def loop(node: Tree): Seq[Tree] = {
     val nodes: Seq[Tree] = node match {
-      case e: Defn.Class => mapper(e.templ.stats)
-      case e: Defn.Trait => mapper(e.templ.stats)
-      case e: Defn.Object => mapper(e.templ.stats)
+      case e: Defn.Class => mapper(e.templ.stats.get)
+      case e: Defn.Trait => mapper(e.templ.stats.get)
+      case e: Defn.Object => mapper(e.templ.stats.get)
       case e: Pkg => mapper(e.stats)
       case e: Decl.Def => Seq(e)
       case _ => Seq()
