@@ -9,14 +9,14 @@ case class Name(name: String, hash: Int)
 
 case class SourceFile(name: String)
 
-trait Tree
+sealed trait Tree
 
-trait Stat extends Tree
+sealed trait Stat extends Tree
 
 //for now
 
 
-trait Defn extends Stat
+sealed trait Defn extends Stat
 
 object Defn {
 
@@ -51,7 +51,7 @@ case class Pkg(name: Name,
 
 case class Template(stats: Seq[Stat])
 
-trait Ctor extends Stat
+sealed trait Ctor extends Stat
 
 object Ctor {
 
@@ -62,7 +62,7 @@ object Ctor {
 
 }
 
-trait Decl extends Stat
+sealed trait Decl extends Stat
 
 object Decl {
 
@@ -89,7 +89,7 @@ object Decl {
 }
 
 
-trait Type extends Tree
+sealed trait Type extends Tree
 
 object Type {
 
@@ -105,13 +105,13 @@ object Type {
                    viewBounds: Seq[Type],
                    contextBounds: Seq[Type]) extends Type
 
-  trait Arg extends Tree
+  sealed trait Arg extends Tree
 
 
 }
 
 
-trait Term
+sealed trait Term
 
 object Term {
 
@@ -124,7 +124,7 @@ object Term {
 }
 
 
-trait Mod extends Tree
+sealed trait Mod extends Tree
 
 object Mod {
 
