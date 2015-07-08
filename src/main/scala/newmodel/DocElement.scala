@@ -128,10 +128,10 @@ trait Mod extends Tree
 
 object Mod {
 
-  case class Annot() extends Mod
+
   object Annot extends Mod
 
-  case class Private() extends Mod
+  object Private extends Mod
 
   // todo should be   class Private(within: Name.Qualifier)
 
@@ -160,5 +160,7 @@ object Mod {
   object VarParam extends Mod
 
   object Ffi extends Mod
+
 }
+
 

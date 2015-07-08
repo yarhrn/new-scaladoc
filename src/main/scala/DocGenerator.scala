@@ -81,14 +81,16 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def processObject(obj: Object): String = {
-    val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
+    val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase.dropRight(1)).mkString(" ")
     val qualifiedName = obj.name.name
     val name = obj.name.name
     val comment = obj.comment.rawComment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
-    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
+    val methods = {
       obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     }
+    obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -114,7 +116,9 @@ object LatexDocGenerator extends DocGenerator {
       case e: Type.Param => bound + dumpTypeParam(e)
     }.getOrElse("")
 
-    tp.mods.map { case _: Covariant => "+"; case _: Contravariant => "-" case _ => "" }.mkString("") +
+    import newmodel.Mod.Covariant
+
+    tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
       tp.name.name + dumpTypeParams(tp.tparams) +
       process(tp.typeBounds.lo, " >: ") +
       process(tp.typeBounds.hi, " <: ") +
@@ -140,6 +144,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
+
   def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
     "\\begin{multicols}{2}\\noindent\n" +
       elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
@@ -166,7 +171,7 @@ object LatexDocGenerator extends DocGenerator {
   def dumpSignature(e: Def) = e.paramss.map(_.map(e => e.name + " : " + e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
 
   def processMethod(m: Def): String = {
-    val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
+    val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase.dropRight(1)).mkString(" ")
     val name = m.name.name
     val returnType = m.decltpe match {
       case e: Type.Name => e.name
@@ -179,7 +184,7 @@ object LatexDocGenerator extends DocGenerator {
       \\index{$name()}
       {\\bf  $name}
       \\begin{lstlisting}[frame=none]
-        $mods def $signature($signature) : $returnType\\end{lstlisting}
+        $mods def $tparams($signature) : $returnType\\end{lstlisting}
       \\begin{itemize}
       \\item{
       {\\bf  Description}
@@ -242,4 +247,5 @@ object LatexDocGenerator extends DocGenerator {
 
   def latexEnder: String = """\printindex
                       \end{document}"""
+
 }
