@@ -1,5 +1,6 @@
 import newmodel.Decl.Def
 import newmodel.Defn.{Class, Object, Trait}
+import newmodel.Mod.{Contravariant, Covariant}
 import newmodel._
 
 
@@ -36,8 +37,14 @@ object PlainStringGenerator extends DocGenerator {
 }
 
 object LatexDocGenerator extends DocGenerator {
+
+
   override def generate(root: Pkg) = {
-    latexHeader + processDocTree(root) + latexEnder
+    latexHeader + processDocTree(root) + generateIndex(Index(root)) + latexEnder
+  }
+
+  def generateIndex(index: Index): String = {
+    "\\newpage\n" + "Generated INDEX" + indexForObjects(index) + "\n"
   }
 
   def processDocTree(root: Pkg): String = {
@@ -76,10 +83,12 @@ object LatexDocGenerator extends DocGenerator {
   def processObject(obj: Object): String = {
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val qualifiedName = obj.name.name
-    val name = obj.name
-    val comment = obj.comment
+    val name = obj.name.name
+    val comment = obj.comment.rawComment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
-    val methods = obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+    val methods = {obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")}
+      obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+    }
     s"""\\entityintro{$name}{${qualifiedName}_object}{$comment}
       \\vskip .1in
       \\vskip .1in
@@ -99,24 +108,73 @@ object LatexDocGenerator extends DocGenerator {
       }}"""
   }
 
+  def dumpTypeParam(tp: Type.Param): String = {
+    def process(tpe: Option[Type], bound: String) = tpe.collect {
+      case e: Type.Name => bound + e.name
+      case e: Type.Param => bound + dumpTypeParam(e)
+    }.getOrElse("")
+
+    tp.mods.map { case _: Covariant => "+"; case _: Contravariant => "-" case _ => "" }.mkString("") +
+      tp.name.name + dumpTypeParams(tp.tparams) +
+      process(tp.typeBounds.lo, " >: ") +
+      process(tp.typeBounds.hi, " <: ") +
+      tp.contextBounds.collect { case e: Type.Name => s": ${e.name}" }.mkString(" ") +
+      tp.viewBounds.collect { case e: Type.Name => s"<% ${e.name}" }.mkString(" ")
+
+
+  }
+
+  def dumpTypeParams(tps: Seq[Type.Param]) = {
+    val params = tps.map(dumpTypeParam).mkString(", ")
+    if (params.nonEmpty) {
+      s"[$params]"
+    } else ""
+  }
+
   def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
       \\begin{verse}
-        ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
+        ${methods.collect { case e: Def => s"{\\bf def ${e.name.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
       \\end{verse}
       }"""
   }
 
-  def dumpMethodInputs(e: Def): String = e.paramss.map(_.decltpe.asInstanceOf[Type.Name]).mkString(",")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
+  def commonIndex(elems: Seq[ {def name: Name}], link: (Name => String)): String = {
+    "\\begin{multicols}{2}\\noindent\n" +
+      elems.map(e => s"{${e.name.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
+      "\\end{multicols}"
+  }
 
-  def dumpSignature(e: Def) = e.paramss.map((input) => s"${e.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")} ${input.name} ${input.decltpe.asInstanceOf[Type.Name]}").mkString(", ")
+  def indexForMethods(index: Index): String = {
+    commonIndex(index.defs, e => e.name)
+  }
+
+  def indexForObjects(index: Index): String = {
+    commonIndex(index.objects, e => s"${e.name}_object")
+  }
+
+  def indexForClasses(index: Index): String = {
+    commonIndex(index.classes, e => s"${e.name}_class")
+  }
+
+  def indexForTraits(index: Index): String = {
+    commonIndex(index.traits, e => s"${e.name}_trait")
+  }
+
+
+  def dumpSignature(e: Def) = e.paramss.map(_.map(e => e.name + " : " + e.decltpe.asInstanceOf[Type.Name].name).mkString(", ")).mkString(")(")
 
   def processMethod(m: Def): String = {
     val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
-    val name = m.name
-    val returnType = m.decltpe
+    val name = m.name.name
+    val returnType = m.decltpe match {
+      case e: Type.Name => e.name
+      case _ => "ERROR" //todo add handling
+    }
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
+    val tparams = dumpTypeParams(m.tparams)
     s"""\\item{
       \\index{$name()}
       {\\bf  $name}
@@ -141,6 +199,7 @@ object LatexDocGenerator extends DocGenerator {
                        ${slash}usepackage{ifpdf}
                        ${slash}usepackage[headings]{fullpage}
                        ${slash}usepackage{listings}
+                       ${slash}usepackage{multicol}
                        \\lstset{language=Java,breaklines=true}
                        \\ifpdf ${slash}usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
                          ${slash}usepackage[pdftex]{graphicx}

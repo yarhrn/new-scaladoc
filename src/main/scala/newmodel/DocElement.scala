@@ -20,7 +20,6 @@ trait Defn extends Stat
 
 object Defn {
 
-
   case class Object(name: Name,
                     templ: Template,
                     comment: Comment,
@@ -58,7 +57,7 @@ object Ctor {
 
   //ConstructorDoc
   case class Constructor(name: Name,
-                         paramss: Seq[Term.Param],
+                         paramss: Seq[Seq[Term.Param]],
                          comment: Comment) extends Ctor
 
 }
@@ -82,7 +81,7 @@ object Decl {
   //MethodDoc
   case class Def(name: Name,
                  decltpe: Type,
-                 paramss: Seq[Term.Param],
+                 paramss: Seq[Seq[Term.Param]],
                  tparams: Seq[Type.Param],
                  comment: Comment,
                  mods: Seq[Mod]) extends Decl
@@ -96,20 +95,15 @@ object Type {
 
   case class Name(name: String) extends Type
 
-  sealed trait Variance
 
-  sealed case class Covariance() extends Variance
+  case class Bounds(lo: Option[Type], hi: Option[Type])
 
-  sealed case class Contravariance() extends Variance
-
-  class Bounds(lo: Option[Type], hi: Option[Type])
-
-  class Param(variance: Option[Variance],
-              name: Type.Name,
-              tparams: Seq[Type.Param],
-              typeBounds: Type.Bounds,
-              viewBounds: Seq[Type],
-              contextBounds: Seq[Type]) extends Type
+  case class Param(mods: Seq[Mod],
+                   name: Type.Name,
+                   tparams: Seq[Type.Param],
+                   typeBounds: Type.Bounds,
+                   viewBounds: Seq[Type],
+                   contextBounds: Seq[Type]) extends Type
 
   trait Arg extends Tree
 
@@ -134,9 +128,10 @@ trait Mod extends Tree
 
 object Mod {
 
+  case class Annot() extends Mod
   object Annot extends Mod
 
-  object Private extends Mod
+  case class Private() extends Mod
 
   // todo should be   class Private(within: Name.Qualifier)
 
