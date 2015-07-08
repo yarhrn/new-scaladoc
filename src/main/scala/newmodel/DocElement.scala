@@ -128,37 +128,39 @@ trait Mod extends Tree
 
 object Mod {
 
-  case class Annot() extends Mod
 
-  case class Private() extends Mod
+  object Annot extends Mod
+
+  object Private extends Mod
 
   // todo should be   class Private(within: Name.Qualifier)
 
-  case class Protected() extends Mod
+  object Protected extends Mod
 
-  case class Implicit() extends Mod
+  object Implicit extends Mod
 
-  case class Final() extends Mod
+  object Final extends Mod
 
-  case class Sealed() extends Mod
+  object Sealed extends Mod
 
-  case class Override() extends Mod
+  object Override extends Mod
 
-  case class Case() extends Mod
+  object Case extends Mod
 
-  case class Abstract() extends Mod
+  object Abstract extends Mod
 
-  case class Covariant() extends Mod
+  object Covariant extends Mod
 
-  case class Contravariant() extends Mod
+  object Contravariant extends Mod
 
-  case class Lazy() extends Mod
+  object Lazy extends Mod
 
-  case class ValParam() extends Mod
+  object ValParam extends Mod
 
-  case class VarParam() extends Mod
+  object VarParam extends Mod
 
-  case class Ffi(signature: String) extends Mod
+  object Ffi extends Mod
 
 }
+
 
