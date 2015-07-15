@@ -5,8 +5,6 @@ import newmodel.Ctor.Constructor
 // for now
 case class Comment(rawComment: String)
 
-case class Name(name: String, hash: Int)
-
 case class SourceFile(name: String)
 
 sealed trait Tree
@@ -19,34 +17,37 @@ sealed trait Stat extends Tree
 sealed trait Defn extends Stat
 
 object Defn {
-
-  case class Object(name: Name,
+  case class Object(name: String,
                     templ: Template,
                     comment: Comment,
                     mods: Seq[Mod],
-                    file: SourceFile) extends Defn
+                    file: SourceFile,
+                    id: Seq[Tree]) extends Defn
 
-  case class Trait(name: Name,
+  case class Trait(name: String,
                    templ: Template,
                    comment: Comment,
                    mods: Seq[Mod],
                    tparams: Seq[Type.Param],
-                   file: SourceFile) extends Defn
+                   file: SourceFile,
+                   id: Seq[Tree]) extends Defn
 
-  case class Class(name: Name,
+  case class Class(name: String,
                    ctor: Option[Constructor],
                    comment: Comment,
                    tparams: Seq[Type.Param],
                    mods: Seq[Mod],
                    file: SourceFile,
                    templ: Template,
-                   companion: Option[Object]) extends Defn
+                   companion: Option[Object],
+                   id: Seq[Tree]) extends Defn
 
 }
 
-case class Pkg(name: Name,
+case class Pkg(name: String,
                stats: Seq[Stat],
-               comment: Comment) extends Defn
+               comment: Comment,
+               id: Seq[Tree]) extends Defn
 
 
 case class Template(stats: Seq[Stat])
@@ -56,7 +57,7 @@ sealed trait Ctor extends Stat
 object Ctor {
 
   //ConstructorDoc
-  case class Constructor(name: Name,
+  case class Constructor(name: String,
                          paramss: Seq[Seq[Term.Param]],
                          comment: Comment) extends Ctor
 
@@ -66,25 +67,29 @@ sealed trait Decl extends Stat
 
 object Decl {
 
+//  type Tpe = Seq[Tree]
   //ValDoc
-  case class Val(name: Name,
-                 decltpe: Type,
+  case class Val(name: String,
+                 decltpe: Seq[Tree],
                  comment: Comment,
-                 mods: Seq[Mod]) extends Decl
+                 mods: Seq[Mod],
+                 id: Seq[Tree]) extends Decl
 
   //VarDoc
-  case class Var(name: Name,
-                 decltpe: Type,
+  case class Var(name: String,
+                 decltpe: Seq[Tree],
                  comment: Comment,
-                 mods: Seq[Mod]) extends Decl
+                 mods: Seq[Mod],
+                 id: Seq[Tree]) extends Decl
 
   //MethodDoc
-  case class Def(name: Name,
-                 decltpe: Type,
+  case class Def(name: String,
+                 decltpe: Seq[Tree],
                  paramss: Seq[Seq[Term.Param]],
                  tparams: Seq[Type.Param],
                  comment: Comment,
-                 mods: Seq[Mod]) extends Decl
+                 mods: Seq[Mod],
+                 id: Seq[Tree]) extends Decl
 
 }
 
@@ -103,7 +108,8 @@ object Type {
                    tparams: Seq[Type.Param],
                    typeBounds: Type.Bounds,
                    viewBounds: Seq[Type],
-                   contextBounds: Seq[Type]) extends Type
+                   contextBounds: Seq[Type],
+                   id: Option[Seq[Tree]]) extends Type
 
   sealed trait Arg extends Tree
 
@@ -111,9 +117,11 @@ object Type {
 }
 
 
-sealed trait Term
+sealed trait Term extends Tree
 
 object Term {
+
+  case class Name(name: String) extends Term
 
   case class Param(name: String,
                    mods: Seq[Mod],
