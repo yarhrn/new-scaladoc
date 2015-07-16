@@ -1,5 +1,6 @@
 import newmodel.Decl.Def
 import newmodel.Defn.{Class, Object, Trait}
+import newmodel.Mod.{Covariant, Contravariant}
 import newmodel._
 
 
@@ -70,11 +71,11 @@ object LatexDocGenerator extends DocGenerator {
     }
     val objects = pack.stats.collect { case o: Object => o }
     """\chapter{Package org}{
-         \hypertarget{""" + label(pack) + """}{Package"""+pack.name+"""}\hskip -.05in
+         \hypertarget{""" + label(pack) + """}{Package""" + pack.name + """}\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
          \hbox{{\bf  Objects}}
-         """ + processObjects(objects)
+                                                                        """ + processObjects(objects)
   }
 
   def processObjects(classes: Seq[Object]) = {
@@ -113,23 +114,23 @@ object LatexDocGenerator extends DocGenerator {
         }}"""
   }
 
-  //  def dumpTypeParam(tp: Type.Param): String = {
-  //    def process(tpe: Option[Type], bound: String) = tpe.collect {
-  //      case e: Type.Name => bound + e
-  //      case e: Type.Param => bound + dumpTypeParam(e)
-  //    }.getOrElse("")
-  //
-  //    import newmodel.Mod.Covariant
-  //
-  //    tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
-  //      tp.name.link.last.name + dumpTypeParams(tp.tparams) +
-  //      process(tp.typeBounds.lo, " >: ") +
-  //      process(tp.typeBounds.hi, " <: ") +
-  //      tp.contextBounds.collect { case e: Type.Name => s": ${e.link.last.name}" }.mkString(" ") +
-  //      tp.viewBounds.collect { case e: Type.Name => s"<% ${e.link.last.name}" }.mkString(" ")
-  //
-  //
-  //  }
+    def dumpTypeParam(tp: Type.Param): String = {
+      def process(tpe: Option[Type], bound: String) = tpe.collect {
+        case e: Type.Name => bound + e
+        case e: Type.Param => bound + dumpTypeParam(e)
+      }.getOrElse("")
+
+      import newmodel.Mod.Covariant
+
+      tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
+        tp.name.link.last.name + dumpTypeParams(tp.tparams) +
+        process(tp.typeBounds.lo, " >: ") +
+        process(tp.typeBounds.hi, " <: ") +
+        tp.contextBounds.collect { case e: Type.Name => s": ${e.link.last.name}" }.mkString(" ") +
+        tp.viewBounds.collect { case e: Type.Name => s"<% ${e.link.last.name}" }.mkString(" ")
+
+
+    }
 
   //  def dumpTypeParams(tps: Seq[Type.Param]) = {
   //    val params = tps.map(dumpTypeParam).mkString(", ")
@@ -171,10 +172,30 @@ object LatexDocGenerator extends DocGenerator {
   //    }
 
 
+  def dumpSignature(e: Def) = {
+    e.paramss.map(_.map(e => e.name + " : " + e.decltpe.last.name).mkString(", ")).mkString(")(")
+  }
 
-    def dumpSignature(e: Def) = {
-      e.paramss.map(_.map(e => e.name + " : " + e.decltpe.last.name).mkString(", ")).mkString(")(")
+  def dumpType(tpe: Type):String = {
+    def process(tpe: Option[Type], bound: String) = tpe.collect {
+      case e: Type.Name => bound + dumpType(e)
+      case e: Type.Param => bound + dumpType(e)
+    }.getOrElse("")
+
+    tpe match {
+      case e:Type.Name => hyperref(e,Some(e.name))
+      case e:Type.Apply => dumpType(e.tpe) + "[" + e.args.map(dumpType).mkString(", ") + "]"
+      case e:Type.Param => dumpType(e) +
     }
+
+    tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
+      tp.name.link.last.name + dumpTypeParams(tp.tparams) +
+      process(tp.typeBounds.lo, " >: ") +
+      process(tp.typeBounds.hi, " <: ") +
+      tp.contextBounds.collect { case e: Type.Name => s": ${e.link.last.name}" }.mkString(" ") +
+      tp.viewBounds.collect { case e: Type.Name => s"<% ${e.link.last.name}" }.mkString(" ")
+
+  }
 
   def processMethod(m: Def): String = {
     val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase.dropRight(1)).mkString(" ")
@@ -251,8 +272,11 @@ object LatexDocGenerator extends DocGenerator {
   }
 
 
-  def label(e: {def id: Seq[Tree]}): String = {
-    link(e.id)
+  def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
+    s"\\hypertarget{${link(e.id)}}{$text}"
+  }
+  def hyperref(e: {def id: Seq[Tree]}, text: Option[String])={
+    s"\\hyperref{${link(e.id)}}{$text}"
   }
 
   def link(tpe: Seq[Tree]) = {
@@ -266,8 +290,8 @@ object LatexDocGenerator extends DocGenerator {
         case (e1: Type.Name, e2: Type.Name) => e1.name + typeToType
       }
     } else s match {
-      case s: Type.Name=> s.name
-      case s: Term.Name=> s.name
+      case s: Type.Name => s.name
+      case s: Term.Name => s.name
     }
     tpe.zipWithIndex.map {
       case (e, i) => separtor(e, i)
@@ -278,5 +302,5 @@ object LatexDocGenerator extends DocGenerator {
   def latexEnder: String = """\printindex
                       \end{document}"""
 
-//  override def generate(root: Pkg): String = ""
+  //  override def generate(root: Pkg): String = ""
 }

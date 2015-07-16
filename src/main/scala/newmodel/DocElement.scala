@@ -1,7 +1,5 @@
 package newmodel
 
-import java.util.Optional
-
 import newmodel.Ctor.Constructor
 
 // for now
@@ -101,17 +99,20 @@ sealed trait Type extends Tree
 
 object Type {
 
-  case class Name(name: String, id: Optional[Seq[Tree]]) extends Type
+  case class Name(name: String, id: Seq[Tree]) extends Type
 
 
   case class Bounds(lo: Option[Type], hi: Option[Type])
 
   case class Param(mods: Seq[Mod],
-                   name: String,
+                   name: Type,
                    tparams: Seq[Type.Param],
                    typeBounds: Type.Bounds,
                    viewBounds: Seq[Type],
                    contextBounds: Seq[Type]) extends Type
+
+  //for Seq[Int] == Type.Apply(Type.Name("Seq"), List(Type.Name("Int")))
+  case class Apply(tpe: Type, args: Seq[Type]) extends Type
 
   sealed trait Arg extends Tree
 
