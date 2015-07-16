@@ -70,21 +70,21 @@ object Decl {
 //  type Tpe = Seq[Tree]
   //ValDoc
   case class Val(name: String,
-                 decltpe: Seq[Tree],
+                 decltpe: Type,
                  comment: Comment,
                  mods: Seq[Mod],
                  id: Seq[Tree]) extends Decl
 
   //VarDoc
   case class Var(name: String,
-                 decltpe: Seq[Tree],
+                 decltpe: Type,
                  comment: Comment,
                  mods: Seq[Mod],
                  id: Seq[Tree]) extends Decl
 
   //MethodDoc
   case class Def(name: String,
-                 decltpe: Seq[Tree],
+                 decltpe: Type,
                  paramss: Seq[Seq[Term.Param]],
                  tparams: Seq[Type.Param],
                  comment: Comment,
