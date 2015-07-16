@@ -1,6 +1,5 @@
 import newmodel.Decl.Def
 import newmodel.Defn.{Class, Object, Trait}
-import newmodel.Mod.Contravariant
 import newmodel._
 
 
@@ -172,7 +171,10 @@ object LatexDocGenerator extends DocGenerator {
   //    }
 
 
-  //  def dumpSignature(e: Def) = e.paramss.map(_.map(e => e.name + " : " + e.decltpe.last.name).mkString(", ")).mkString(")(")
+
+    def dumpSignature(e: Def) = {
+      e.paramss.map(_.map(e => e.name + " : " + e.decltpe.last.name).mkString(", ")).mkString(")(")
+    }
 
   def processMethod(m: Def): String = {
     val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase.dropRight(1)).mkString(" ")
@@ -182,7 +184,7 @@ object LatexDocGenerator extends DocGenerator {
       case _ => "ERROR" //todo add handling
     }
     val comment = m.comment.rawComment
-    val signature = "Stub" //dumpSignature(m)
+    val signature = dumpSignature(m)
     val tparams = "[]" //dumpTypeParams(m.tparams)
     s"""\\item{
         \\index{$name()}

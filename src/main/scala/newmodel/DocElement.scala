@@ -1,5 +1,7 @@
 package newmodel
 
+import java.util.Optional
+
 import newmodel.Ctor.Constructor
 
 // for now
@@ -17,6 +19,7 @@ sealed trait Stat extends Tree
 sealed trait Defn extends Stat
 
 object Defn {
+
   case class Object(name: String,
                     templ: Template,
                     comment: Comment,
@@ -67,7 +70,7 @@ sealed trait Decl extends Stat
 
 object Decl {
 
-//  type Tpe = Seq[Tree]
+  //  type Tpe = Seq[Tree]
   //ValDoc
   case class Val(name: String,
                  decltpe: Type,
@@ -98,18 +101,17 @@ sealed trait Type extends Tree
 
 object Type {
 
-  case class Name(name: String) extends Type
+  case class Name(name: String, id: Optional[Seq[Tree]]) extends Type
 
 
   case class Bounds(lo: Option[Type], hi: Option[Type])
 
   case class Param(mods: Seq[Mod],
-                   name: Type.Name,
+                   name: String,
                    tparams: Seq[Type.Param],
                    typeBounds: Type.Bounds,
                    viewBounds: Seq[Type],
-                   contextBounds: Seq[Type],
-                   id: Option[Seq[Tree]]) extends Type
+                   contextBounds: Seq[Type]) extends Type
 
   sealed trait Arg extends Tree
 
@@ -121,7 +123,7 @@ sealed trait Term extends Tree
 
 object Term {
 
-  case class Name(name: String) extends Term
+  case class Name(name: String, id: Seq[Tree]) extends Term
 
   case class Param(name: String,
                    mods: Seq[Mod],
