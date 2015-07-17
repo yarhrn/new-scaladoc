@@ -114,6 +114,9 @@ object Type {
   //for Seq[Int] == Type.Apply(Type.Name("Seq"), List(Type.Name("Int")))
   case class Apply(tpe: Type, args: Seq[Type]) extends Type
 
+
+  // A with B with C
+  case class Compound(tpes:Seq[Type])
   sealed trait Arg extends Tree
 
 

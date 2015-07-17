@@ -8,27 +8,28 @@ object Util {
     import newmodel._
     val orgFoofoo = newmodel.Decl.Def(
       "foo",
-      Seq(Term.Name("java"), Term.Name("lang"), Type.Name("String")),
+      Type.Name("String",Seq(Term.Name("java",Seq()), Term.Name("lang",Seq()), Type.Name("String",Seq()))),
       Seq(),
       Seq(),
       Comment("Stub"),
       Seq(),
-      Seq(Term.Name("org"), Type.Name("Foo"), Term.Name("foo")))
+      Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()), Term.Name("foo",Seq())))
     val orgFoo = newmodel.Defn.Object(
       "Foo",
       newmodel.Template(Seq(orgFoofoo)),
       Comment("stub"),
       Seq(),
       SourceFile(""),
-      Seq(Term.Name("org"), Type.Name("Foo"))
+      Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()))
     )
     val org = newmodel.Pkg(
       "org",
       Seq(orgFoo),
       Comment("asd"),
-      Seq(Term.Name("org"))
+      Seq(Term.Name("org",Seq()))
     )
     org
+
   }
 }
 

@@ -1,6 +1,5 @@
 import newmodel.Decl.Def
 import newmodel.Defn.{Class, Object, Trait}
-import newmodel.Mod.{Covariant, Contravariant}
 import newmodel._
 
 
@@ -40,13 +39,15 @@ object LatexDocGenerator extends DocGenerator {
 
 
   def generateIndex(index: Index): String = {
-    //      "\\newpage\n" + "Generated INDEX" + indexForObjects(index) + "\n"
-
-    ""
+    "\\newpage\n" +
+      "Generated INDEX" + indexForObjects(index) + "\n" +
+      "Generated INDEX" + indexForMethods(index) + "\n" +
+      "Generated INDEX" + indexForClasses(index) + "\n" +
+      "Generated INDEX" + indexForTraits(index) + "\n"
   }
 
   override def generate(root: Pkg) = {
-    latexHeader + processDocTree(root) + latexEnder
+    latexHeader + processDocTree(root) + generateIndex(Index(root)) + latexEnder
   }
 
 
@@ -70,12 +71,12 @@ object LatexDocGenerator extends DocGenerator {
       case e: Tree => "nvm"
     }
     val objects = pack.stats.collect { case o: Object => o }
-    """\chapter{Package org}{
-         \hypertarget{""" + label(pack) + """}{Package""" + pack.name + """}\hskip -.05in
+    """\chapter{Package org}{""" +
+      hypertarget(pack, None) + """}\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
          \hbox{{\bf  Objects}}
-                                                                        """ + processObjects(objects)
+                                                               """ + processObjects(objects)
   }
 
   def processObjects(classes: Seq[Object]) = {
@@ -91,13 +92,13 @@ object LatexDocGenerator extends DocGenerator {
     }
     obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
-    val link = link(obj.id)
+    val link = hypertarget(obj, Some(obj.name))
     s"""
 
-        \\entityintro{$name}{$link}{$comment}
+        \\entityintro{$name}{}{$comment}
         \\vskip .1in
         \\vskip .1in
-        \\hypertarget{$link}{}
+        $link
         \\section{object $name}{
         \\vskip .1in
         $comment
@@ -114,103 +115,82 @@ object LatexDocGenerator extends DocGenerator {
         }}"""
   }
 
-    def dumpTypeParam(tp: Type.Param): String = {
-      def process(tpe: Option[Type], bound: String) = tpe.collect {
-        case e: Type.Name => bound + e
-        case e: Type.Param => bound + dumpTypeParam(e)
-      }.getOrElse("")
-
-      import newmodel.Mod.Covariant
-
-      tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
-        tp.name.link.last.name + dumpTypeParams(tp.tparams) +
-        process(tp.typeBounds.lo, " >: ") +
-        process(tp.typeBounds.hi, " <: ") +
-        tp.contextBounds.collect { case e: Type.Name => s": ${e.link.last.name}" }.mkString(" ") +
-        tp.viewBounds.collect { case e: Type.Name => s"<% ${e.link.last.name}" }.mkString(" ")
-
-
-    }
-
-  //  def dumpTypeParams(tps: Seq[Type.Param]) = {
-  //    val params = tps.map(dumpTypeParam).mkString(", ")
-  //    if (params.nonEmpty) {
-  //      s"[$params]"
-  //    } else ""
-  //  }
 
   def processMethodsSummary(methods: Seq[Tree]): String = {
     s"""\\subsection{Method summary}{
         \\begin{verse}
-          ${methods.collect { case e: Def => s"{\\bf def ${e.name}(dumpMethodInputs(e))}\\\\" }.mkString("\n")}
+          ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
         \\end{verse}
         }"""
   }
 
-  // def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => e.decltpe.asInstanceOf[Type.Name].link.last.name).mkString(", ")).mkString(")(")
+  def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => dumpType(e.decltpe)).mkString(", ")).mkString(")(")
 
-  //    def commonIndex(elems: Seq[ {def name: Type.Name}], link: (Type.Name => String)): String = {
-  //      "\\begin{multicols}{2}\\noindent\n" +
-  //        elems.map(e => s"{${e.name}\\ref{${link(e.name)}}\\\\}").mkString("\n") + "\n" +
-  //        "\\end{multicols}"
-  //    }
-  //
-  //    def indexForMethods(index: Index): String = {
-  //      commonIndex(index.defs, e => e.name)
-  //    }
-  //
-  //    def indexForObjects(index: Index): String = {
-  //      commonIndex(index.objects, e => s"${e.link.last.name}_object")
-  //    }
-  //
-  //    def indexForClasses(index: Index): String = {
-  //      commonIndex(index.classes, e => s"${e.name}_class")
-  //    }
-  //
-  //    def indexForTraits(index: Index): String = {
-  //      commonIndex(index.traits, e => s"${e.name}_trait")
-  //    }
+  def commonIndex(elems: Seq[ {def name: String; def id: Seq[Tree]}]): String = {
+    "\\begin{multicols}{2}\\noindent\n" +
+      elems.map(e => s"{${hyperlink(e, Some(e.name))}\\\\}").mkString("\n") + "\n" +
+      "\\end{multicols}"
+  }
+
+  def indexForMethods(index: Index): String = {
+    commonIndex(index.defs)
+  }
+
+  def indexForObjects(index: Index): String = {
+    commonIndex(index.objects)
+  }
+
+  def indexForClasses(index: Index): String = {
+    commonIndex(index.classes)
+  }
+
+  def indexForTraits(index: Index): String = {
+    commonIndex(index.traits)
+  }
 
 
   def dumpSignature(e: Def) = {
-    e.paramss.map(_.map(e => e.name + " : " + e.decltpe.last.name).mkString(", ")).mkString(")(")
+    e.paramss.map(_.map(e => e.name + " : " + dumpType(e.decltpe)).mkString(", ")).mkString(")(")
   }
 
-  def dumpType(tpe: Type):String = {
-    def process(tpe: Option[Type], bound: String) = tpe.collect {
-      case e: Type.Name => bound + dumpType(e)
-      case e: Type.Param => bound + dumpType(e)
-    }.getOrElse("")
+  def dumpTypeParams(tps: Seq[Type.Param]) = {
+    val params = tps.map(dumpType).mkString(", ")
+    if (params.nonEmpty) {
+      s"[$params]"
+    } else ""
+  }
+
+  def dumpType(tpe: Type): String = {
 
     tpe match {
-      case e:Type.Name => hyperref(e,Some(e.name))
-      case e:Type.Apply => dumpType(e.tpe) + "[" + e.args.map(dumpType).mkString(", ") + "]"
-      case e:Type.Param => dumpType(e) +
+      case e: Type.Name => hyperlink(e, Some(e.name))
+      case e: Type.Apply => dumpType(e.tpe) + "[" + e.args.map(dumpType).mkString(", ") + "]"
+      case e: Type.Compound => e.tpes.map(dumpType).mkString("with ")
+      case e: Type.Param => {
+        val name = dumpType(e.name)
+        val tparams = dumpTypeParams(e.tparams)
+        val lo = e.typeBounds.lo.map(" >: " + dumpType(_)).getOrElse("")
+        val hi = e.typeBounds.hi.map(" <: " + dumpType(_)).getOrElse("")
+        val ctx = e.contextBounds.map(dumpType).map(": " + _).mkString(" ")
+        val view = e.viewBounds.map(dumpType).map("<% " + _).mkString(" ")
+        "[" + name + tparams + hi + lo + ctx + view + "]"
+      }
     }
-
-    tp.mods.map { case _@Covariant => "+"; case _@Contravariant => "-" case _ => "" }.mkString("") +
-      tp.name.link.last.name + dumpTypeParams(tp.tparams) +
-      process(tp.typeBounds.lo, " >: ") +
-      process(tp.typeBounds.hi, " <: ") +
-      tp.contextBounds.collect { case e: Type.Name => s": ${e.link.last.name}" }.mkString(" ") +
-      tp.viewBounds.collect { case e: Type.Name => s"<% ${e.link.last.name}" }.mkString(" ")
-
   }
 
   def processMethod(m: Def): String = {
     val mods = m.mods.map(_.getClass.getSimpleName.toLowerCase.dropRight(1)).mkString(" ")
     val name = m.name
-    val returnType = m.decltpe match {
-      case e: Type.Name => e
-      case _ => "ERROR" //todo add handling
-    }
+    val returnType = dumpType(m.decltpe)
     val comment = m.comment.rawComment
     val signature = dumpSignature(m)
-    val tparams = "[]" //dumpTypeParams(m.tparams)
+    val tparams = dumpTypeParams(m.tparams)
+    val methodRef = hypertarget(m, None)
+    val linkId = link(m.id)
     s"""\\item{
-        \\index{$name()}
-        {\\bf  $name}
-            $mods def $tparams($signature) : \\hyperlink{${link(m.id)}}{${}}
+        \\index{$linkId}
+        {\\bf  $methodRef}
+            $mods def $tparams($signature) : $returnType
         \\begin{itemize}
         \\item{
         {\\bf  Description}
@@ -273,21 +253,32 @@ object LatexDocGenerator extends DocGenerator {
 
 
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
-    s"\\hypertarget{${link(e.id)}}{$text}"
+    val t = text.getOrElse("")
+    if (e.id.isEmpty)
+      t
+    else
+      s"\\hypertarget{${link(e.id)}}{$t}"
   }
-  def hyperref(e: {def id: Seq[Tree]}, text: Option[String])={
-    s"\\hyperref{${link(e.id)}}{$text}"
+
+  def hyperlink(e: {def id: Seq[Tree]}, text: Option[String]) = {
+    val t = text.getOrElse("")
+    if (e.id.isEmpty)
+      t
+    else
+      s"\\hyperlink{${link(e.id)}}{$t}"
   }
 
   def link(tpe: Seq[Tree]) = {
     val termToTerm = "."
     val termToType = "."
     val typeToType = "#"
+    val typeToTerm = "_"
     def separtor(s: Tree, i: Int): String = if (s != tpe.last) {
       (s, tpe(i + 1)) match {
         case (e1: Term.Name, e2: Type.Name) => e1.name + termToType
         case (e1: Term.Name, e2: Term.Name) => e1.name + termToTerm
         case (e1: Type.Name, e2: Type.Name) => e1.name + typeToType
+        case (e1: Type.Name, e2: Term.Name) => e1.name + typeToTerm
       }
     } else s match {
       case s: Type.Name => s.name
@@ -301,6 +292,4 @@ object LatexDocGenerator extends DocGenerator {
 
   def latexEnder: String = """\printindex
                       \end{document}"""
-
-  //  override def generate(root: Pkg): String = ""
 }
