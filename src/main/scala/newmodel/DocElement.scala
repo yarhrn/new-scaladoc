@@ -18,30 +18,27 @@ sealed trait Defn extends Stat
 
 object Defn {
 
-  case class Object(name: String,
+  case class Object(name: Type.Name,
                     templ: Template,
                     comment: Comment,
                     mods: Seq[Mod],
-                    file: SourceFile,
-                    id: Seq[Tree]) extends Defn
+                    file: SourceFile) extends Defn
 
-  case class Trait(name: String,
+  case class Trait(name: Type.Name,
                    templ: Template,
                    comment: Comment,
                    mods: Seq[Mod],
                    tparams: Seq[Type.Param],
-                   file: SourceFile,
-                   id: Seq[Tree]) extends Defn
+                   file: SourceFile) extends Defn
 
-  case class Class(name: String,
+  case class Class(name: Type.Name,
                    ctor: Option[Constructor],
                    comment: Comment,
                    tparams: Seq[Type.Param],
                    mods: Seq[Mod],
                    file: SourceFile,
                    templ: Template,
-                   companion: Option[Object],
-                   id: Seq[Tree]) extends Defn
+                   companion: Option[Object]) extends Defn
 
 }
 

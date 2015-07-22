@@ -23,9 +23,13 @@ class LatexDocGeneratorTest extends FunSuite {
     val `[T]` = Type.Param(Nil, Type.Name("T",Seq()), Nil, Type.Bounds(None, None), Nil, Nil)
     assert(LatexDocGenerator.dumpType(`[T]` ) == "[T]")
 
-    //Type.Param(Nil, Type.Name("A"), Nil, Type.Bounds(None, None), List(Type.Apply(Type.Name("Ordered"), List(Type.Name("A")))), Nil)
-    val `[A <% Ordered[A]]` = Type.Param(Nil, Type.Name("A",Seq()), Nil, Type.Bounds(Some(Type.Name("Int",Seq())), None), List(Type.Apply(Type.Name("CustomClass",Seq(Term.Name("org",Seq()),Type.Name("CustomClass",Seq()))), List(Type.Name("A",Seq())))), Nil)
-    assert(LatexDocGenerator.dumpType(`[A <% Ordered[A]]`) == "[A >: Int<% \\hyperlink{org.CustomClass}{CustomClass}[A]]")
+    val `[A >: Int <% CustomClass[A]]` = Type.Param(
+      Nil,
+      Type.Name("A",Seq()),
+      Nil,
+      Type.Bounds(Some(Type.Name("Int",Seq())), None),
+      List(Type.Apply(Type.Name("CustomClass",Seq(Term.Name("org",Seq()),Type.Name("CustomClass",Seq()))), List(Type.Name("A",Seq())))), Nil)
+    assert(LatexDocGenerator.dumpType(`[A >: Int <% CustomClass[A]]`) == "[A >: Int<% \\hyperlink{org.CustomClass}{CustomClass}[A]]")
 
   }
 

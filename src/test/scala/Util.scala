@@ -15,12 +15,11 @@ object Util {
       Seq(),
       Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()), Term.Name("foo",Seq())))
     val orgFoo = newmodel.Defn.Object(
-      "Foo",
+      Type.Name("Foo",Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()))) ,
       newmodel.Template(Seq(orgFoofoo)),
       Comment("stub"),
       Seq(),
-      SourceFile(""),
-      Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()))
+      SourceFile("")
     )
     val org = newmodel.Pkg(
       "org",

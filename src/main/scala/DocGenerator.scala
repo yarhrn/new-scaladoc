@@ -92,7 +92,7 @@ object LatexDocGenerator extends DocGenerator {
     }
     obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
-    val link = hypertarget(obj, Some(obj.name))
+    val link = hypertarget(obj.name, Some(obj.name.name))
     s"""
 
         \\entityintro{$name}{}{$comment}
@@ -137,15 +137,15 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def indexForObjects(index: Index): String = {
-    commonIndex(index.objects)
+    commonIndex(index.objects.map(_.name))
   }
 
   def indexForClasses(index: Index): String = {
-    commonIndex(index.classes)
+    commonIndex(index.classes.map(_.name))
   }
 
   def indexForTraits(index: Index): String = {
-    commonIndex(index.traits)
+    commonIndex(index.traits.map(_.name))
   }
 
 
@@ -272,7 +272,7 @@ object LatexDocGenerator extends DocGenerator {
     val termToTerm = "."
     val termToType = "."
     val typeToType = "#"
-    val typeToTerm = "_"
+    val typeToTerm = "#"
     def separtor(s: Tree, i: Int): String = if (s != tpe.last) {
       (s, tpe(i + 1)) match {
         case (e1: Term.Name, e2: Type.Name) => e1.name + termToType
