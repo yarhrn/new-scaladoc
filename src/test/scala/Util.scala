@@ -16,7 +16,7 @@ object Util {
       Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()), Term.Name("foo",Seq())))
     val orgFoo = newmodel.Defn.Object(
       Type.Name("Foo",Seq(Term.Name("org",Seq()), Type.Name("Foo",Seq()))) ,
-      newmodel.Template(Seq(orgFoofoo)),
+      newmodel.Template(Seq(),Seq(orgFoofoo)),
       Comment("stub"),
       Seq(),
       SourceFile("")
