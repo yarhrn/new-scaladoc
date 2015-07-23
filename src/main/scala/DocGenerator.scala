@@ -35,7 +35,7 @@ object PlainStringGenerator extends DocGenerator {
   }
 }
 
-object LatexDocGenerator extends DocGenerator {
+class LatexDocGenerator(index: Index) extends DocGenerator {
 
 
   def generateIndex(index: Index): String = {
@@ -47,7 +47,7 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   override def generate(root: Pkg) = {
-    latexHeader + processDocTree(root) + generateIndex(Index(root)) + latexEnder
+    latexHeader + processDocTree(root) + generateIndex(index) + latexEnder
   }
 
 
@@ -71,26 +71,69 @@ object LatexDocGenerator extends DocGenerator {
       case e: Tree => "nvm"
     }
     val objects = pack.stats.collect { case o: Object => o }
+    val traits = pack.stats.collect { case t: Trait => t }
     """\chapter{Package org}{""" +
       hypertarget(pack, None) + """}\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-         \hbox{{\bf  Objects}}
-                                                               """ + processObjects(objects)
+                                """ + processObjects(objects)
   }
 
   def processObjects(classes: Seq[Object]) = {
-    classes.map(processObject).mkString("\n")
+    "\\hbox{{\\bf  Objects}}" ++ classes.map(processObject).mkString("\n")
+  }
+
+  def processTraits(classes: Seq[Trait]) = {
+    "\\hbox{{\\bf  Objects}}" ++ classes.map(processTrait).mkString("\n")
+  }
+
+  def dumpParent(tpe: Type.Name) = {
+    val p = index.getByLink(tpe.id)
+    val (name, tparams) = p match {
+      case Some(o: Object) => (o.name, Seq())
+      case Some(o: Trait) => (o.name, o.tparams)
+      case Some(o: Class) => (o.name, o.tparams)
+    }
+    hyperlink(name, Some(name.name)) ++ dumpTypeParams(tparams)
+  }
+
+  def processTrait(trt: Trait): String = {
+    val name = trt.name
+    val comment = trt.comment.rawComment
+    val methodsSummary = processMethodsSummary(trt.templ.stats)
+    val methods = {
+      trt.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+    }
+    val mods = trt.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
+    val link = hypertarget(trt.name, Some(trt.name.name))
+    val parent = trt.templ.parents.map(dumpParent).mkString(" with ")
+    s"""
+        \\entityintro{$name}{}{$comment}
+        \\vskip .1in
+        \\vskip .1in
+        $link
+        \\section{object $name}{
+        \\vskip .1in
+        $comment
+        \\subsection{Declaration}{
+        \\begin{lstlisting}[frame=none]
+        $mods trait ${trt.name.name} extends $parent
+        \\end{lstlisting}
+        $methodsSummary
+        \\subsection{Methods}{
+        \\vskip -2em
+        \\begin{itemize}
+        $methods
+        \\end{itemize}
+        }}"""
   }
 
   def processObject(obj: Object): String = {
     val name = obj.name
     val comment = obj.comment.rawComment
     val methodsSummary = processMethodsSummary(obj.templ.stats)
-    val methods = {
+    val methods =
       obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
-    }
-    obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val link = hypertarget(obj.name, Some(obj.name.name))
     s"""
@@ -161,7 +204,6 @@ object LatexDocGenerator extends DocGenerator {
   }
 
   def dumpType(tpe: Type): String = {
-
     tpe match {
       case e: Type.Name => hyperlink(e, Some(e.name))
       case e: Type.Apply => dumpType(e.tpe) + "[" + e.args.map(dumpType).mkString(", ") + "]"

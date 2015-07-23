@@ -12,8 +12,16 @@ case class Index(root: Pkg) {
 
   def defs = linear.collect { case e: Decl.Def => e }
 
+  def getByLink(id:Seq[Tree]) : Option[Tree] = {
+    linear.find{
+      case e:newmodel.Defn.Object => e.name.id == id
+      case e:newmodel.Defn.Class => e.name.id == id
+      case e:newmodel.Defn.Trait => e.name.id == id
+      case _ => false
+    }
+  }
 
-  private def mapper(stats: Seq[Stat]): Seq[Tree] = stats.map(loop(_)).flatten
+  private def mapper(stats: Seq[Stat]): Seq[Tree] = stats.flatMap(loop(_))
 
   private def loop(node: Tree): Seq[Tree] = {
     val nodes: Seq[Tree] = node match {

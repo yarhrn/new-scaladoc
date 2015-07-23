@@ -48,7 +48,7 @@ case class Pkg(name: String,
                id: Seq[Tree]) extends Defn
 
 
-case class Template(stats: Seq[Stat])
+case class Template(parents : Seq[Type.Name],stats: Seq[Stat])
 
 sealed trait Ctor extends Stat
 
