@@ -18,27 +18,32 @@ sealed trait Defn extends Stat
 
 object Defn {
 
-  case class Object(name: Type.Name,
+  case class Object(name: newmodel.Type.Name,
                     templ: Template,
                     comment: Comment,
                     mods: Seq[Mod],
                     file: SourceFile) extends Defn
 
-  case class Trait(name: Type.Name,
+  case class Trait(name: newmodel.Type.Name,
                    templ: Template,
                    comment: Comment,
                    mods: Seq[Mod],
-                   tparams: Seq[Type.Param],
+                   tparams: Seq[newmodel.Type.Param],
                    file: SourceFile) extends Defn
 
-  case class Class(name: Type.Name,
+  case class Class(name: newmodel.Type.Name,
                    ctor: Option[Constructor],
                    comment: Comment,
-                   tparams: Seq[Type.Param],
+                   tparams: Seq[newmodel.Type.Param],
                    mods: Seq[Mod],
                    file: SourceFile,
                    templ: Template,
                    companion: Option[Object]) extends Defn
+
+  case class Type(mods: Seq[Mod],
+                  name: newmodel.Type.Name,
+                  tparams: Seq[newmodel.Type.Param],
+                  body: newmodel.Type) extends Defn
 
 }
 
@@ -48,7 +53,7 @@ case class Pkg(name: String,
                id: Seq[Tree]) extends Defn
 
 
-case class Template(parents : Seq[Type.Name],stats: Seq[Stat])
+case class Template(parents: Seq[Type.Name], stats: Seq[Stat])
 
 sealed trait Ctor extends Stat
 
@@ -113,7 +118,8 @@ object Type {
 
 
   // A with B with C
-  case class Compound(tpes:Seq[Type])
+  case class Compound(tpes: Seq[Type])
+
   sealed trait Arg extends Tree
 
 

@@ -5,40 +5,40 @@ class LatexDocGeneratorTest extends FunSuite {
   lazy val model1Sample: String = io.Source.fromFile("src/test/resources/util.model1.latex").mkString
   test("basic test for latex generation") {
 
-            assert(model1Sample == new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
+    assert(model1Sample == new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
   }
 
-    test("basic test for dumpTypes"){
-      import newmodel._
-      val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo",Seq(),Comment(""),Seq())))
-      //Int
-      val intTpe = Type.Name("Int", Seq(Term.Name("scala", Seq()), Type.Name("Int", Seq())))
-      assert(latexGenerator.dumpType(intTpe)=="\\hyperlink{scala.Int}{Int}")
+  test("basic test for dumpTypes") {
+    import newmodel._
+    val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo", Seq(), Comment(""), Seq())))
+    //Int
+    val intTpe = Type.Name("Int", Seq(Term.Name("scala", Seq()), Type.Name("Int", Seq())))
+    assert(latexGenerator.dumpType(intTpe) == "\\hyperlink{scala.Int}{Int}")
 
-      //Seq[Int]
-      val tpe = Type.Apply(
-        Type.Name("Seq", Seq(Term.Name("scala", Seq()), Term.Name("collection", Seq()), Type.Name("Seq", Seq()))),
-        Seq(intTpe))
-      assert(latexGenerator.dumpType(tpe)=="\\hyperlink{scala.collection.Seq}{Seq}[\\hyperlink{scala.Int}{Int}]")
+    //Seq[Int]
+    val tpe = Type.Apply(
+      Type.Name("Seq", Seq(Term.Name("scala", Seq()), Term.Name("collection", Seq()), Type.Name("Seq", Seq()))),
+      Seq(intTpe))
+    assert(latexGenerator.dumpType(tpe) == "\\hyperlink{scala.collection.Seq}{Seq}[\\hyperlink{scala.Int}{Int}]")
 
-      val `[T]` = Type.Param(Nil, Type.Name("T",Seq()), Nil, Type.Bounds(None, None), Nil, Nil)
-      assert(latexGenerator.dumpType(`[T]` ) == "[T]")
+    val `[T]` = Type.Param(Nil, Type.Name("T", Seq()), Nil, Type.Bounds(None, None), Nil, Nil)
+    assert(latexGenerator.dumpType(`[T]`) == "[T]")
 
-      val `[A >: Int <% CustomClass[A]]` = Type.Param(
-        Nil,
-        Type.Name("A",Seq()),
-        Nil,
-        Type.Bounds(Some(Type.Name("Int",Seq())), None),
-        List(Type.Apply(Type.Name("CustomClass",Seq(Term.Name("org",Seq()),Type.Name("CustomClass",Seq()))), List(Type.Name("A",Seq())))), Nil)
-      assert(latexGenerator.dumpType(`[A >: Int <% CustomClass[A]]`) == "[A >: Int<% \\hyperlink{org.CustomClass}{CustomClass}[A]]")
+    val `[A >: Int <% CustomClass[A]]` = Type.Param(
+      Nil,
+      Type.Name("A", Seq()),
+      Nil,
+      Type.Bounds(Some(Type.Name("Int", Seq())), None),
+      List(Type.Apply(Type.Name("CustomClass", Seq(Term.Name("org", Seq()), Type.Name("CustomClass", Seq()))), List(Type.Name("A", Seq())))), Nil)
+    assert(latexGenerator.dumpType(`[A >: Int <% CustomClass[A]]`) == "[A >: Int<% \\hyperlink{org.CustomClass}{CustomClass}[A]]")
 
-    }
+  }
 
-  test("link superclass test"){
+  test("link superclass test") {
     import newmodel._
     val trt = Defn.Trait(
       Type.Name("Bar", Seq()),
-      Template(Seq(   Type.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq())))), Seq()),
+      Template(Seq(Type.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq())))), Seq()),
       Comment(""),
       Seq(),
       Seq(),
@@ -70,6 +70,10 @@ class LatexDocGeneratorTest extends FunSuite {
 
     val gen = new LatexDocGenerator(Index(org))
     println(gen.processTrait(trt))
+  }
+
+
+  test("type member support") {
 
   }
 }

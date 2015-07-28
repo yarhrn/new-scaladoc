@@ -101,6 +101,13 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     hyperlink(name, Some(name.name)) ++ dumpTypeParams(tparams)
   }
 
+
+  def dumpTypeMember(tpe: Defn.Type): String = {
+    val name = dumpType(tpe.name)
+    val body = dumpType(tpe.body)
+    s"type $name = $body"
+  }
+
   def processTrait(trt: Trait): String = {
     val name = trt.name
     val comment = trt.comment.rawComment
