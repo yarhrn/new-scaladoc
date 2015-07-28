@@ -72,11 +72,15 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     }
     val objects = pack.stats.collect { case o: Object => o }
     val traits = pack.stats.collect { case t: Trait => t }
-    """\chapter{Package org}{""" +
-      hypertarget(pack, None) + """}\hskip -.05in
+    """
+      \chapter{Package org}{
+    """ ++
+      hypertarget(pack, None) ++
+      """
+         }\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-                                """ + processObjects(objects)
+      """ ++ processObjects(objects)
   }
 
   def processObjects(classes: Seq[Object]) = {
@@ -125,7 +129,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\begin{itemize}
         $methods
         \\end{itemize}
-        }}"""
+        }}
+      """
   }
 
   def processObject(obj: Object): String = {
@@ -137,7 +142,6 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val link = hypertarget(obj.name, Some(obj.name.name))
     s"""
-
         \\entityintro{$name}{}{$comment}
         \\vskip .1in
         \\vskip .1in
@@ -155,16 +159,19 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\begin{itemize}
         $methods
         \\end{itemize}
-        }}"""
+        }}
+      """
   }
 
 
   def processMethodsSummary(methods: Seq[Tree]): String = {
-    s"""\\subsection{Method summary}{
+    s"""
+        \\subsection{Method summary}{
         \\begin{verse}
           ${methods.collect { case e: Def => s"{\\bf def ${e.name}(${dumpMethodInputs(e)})}\\\\" }.mkString("\n")}
         \\end{verse}
-        }"""
+        }
+      """
   }
 
   def dumpMethodInputs(e: Def): String = e.paramss.map(_.map(e => dumpType(e.decltpe)).mkString(", ")).mkString(")(")
@@ -229,7 +236,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     val tparams = dumpTypeParams(m.tparams)
     val methodRef = hypertarget(m, None)
     val linkId = link(m.id)
-    s"""\\item{
+    s"""
+        \\item{
         \\index{$linkId}
         {\\bf  $methodRef}
             $mods def $tparams($signature) : $returnType
@@ -238,59 +246,60 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         {\\bf  Description}
          $comment
         }
-        \\end{itemize}}"""
+        \\end{itemize}}
+      """
   }
 
 
   def latexHeader = {
     val slash = '\\'
     val dollar = '$'
-    s"""${slash}documentclass[11pt,a4paper]{report}
-                       ${slash}usepackage{color}
-                       ${slash}usepackage{ifthen}
-                       ${slash}usepackage{makeidx}
-                       ${slash}usepackage{ifpdf}
-                       ${slash}usepackage[headings]{fullpage}
-                       ${slash}usepackage{listings}
-                       ${slash}usepackage{multicol}
-                       \\lstset{language=Java,breaklines=true}
-                       \\ifpdf ${slash}usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
-                         ${slash}usepackage[pdftex]{graphicx}
-                         \\pdfcompresslevel=9
-                         \\DeclareGraphicsRule{*}{mps}{*}{}
-                       \\else
-                         ${slash}usepackage[dvips]{graphicx}
-                       \\fi
-
-                      \\newcommand{\\entityintro}[3]{%
-                         \\hbox to \\hsize{%
-                           \\vbox{%
-                             \\hbox to .2in{}%
-                           }%
-                           {\\bf  #1}%
-                           \\dotfill\\pageref{#2}%
-                         }
-                         \\makebox[\\hsize]{%
-                           \\parbox{.4in}{}%
-                           \\parbox[l]{5in}{%
-                             \\vspace{1mm}%
-                             #3%
-                             \\vspace{1mm}%
-                           }%
-                         }%
-                       }
-                       \\newcommand{\\refdefined}[1]{
-                       \\expandafter\\ifx\\csname r@#1\\endcsname\\relax
-                       \\relax\\else
-                       {$dollar(${dollar}in \\ref{#1}, page \\pageref{#1}$dollar)$dollar}\\fi}
-                       \\date{\\today}
-                       \\chardef\\textbackslash=`\\\\
-                       \\makeindex
-                       \\begin{document}
-                       \\sloppy
-                       \\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}
-                       \\tableofcontents
-                    """
+    s"""
+     ${slash}documentclass[11pt,a4paper]{report}
+     ${slash}usepackage{color}
+     ${slash}usepackage{ifthen}
+     ${slash}usepackage{makeidx}
+     ${slash}usepackage{ifpdf}
+     ${slash}usepackage[headings]{fullpage}
+     ${slash}usepackage{listings}
+     ${slash}usepackage{multicol}
+     \\lstset{language=Java,breaklines=true}
+     \\ifpdf ${slash}usepackage[pdftex, pdfpagemode={UseOutlines},bookmarks,colorlinks,linkcolor={blue},plainpages=false,pdfpagelabels,citecolor={red},breaklinks=true]{hyperref}
+       ${slash}usepackage[pdftex]{graphicx}
+       \\pdfcompresslevel=9
+       \\DeclareGraphicsRule{*}{mps}{*}{}
+     \\else
+       ${slash}usepackage[dvips]{graphicx}
+     \\fi
+     \\newcommand{\\entityintro}[3]{%
+       \\hbox to \\hsize{%
+         \\vbox{%
+           \\hbox to .2in{}%
+         }%
+         {\\bf  #1}%
+         \\dotfill\\pageref{#2}%
+       }
+       \\makebox[\\hsize]{%
+         \\parbox{.4in}{}%
+         \\parbox[l]{5in}{%
+           \\vspace{1mm}%
+           #3%
+           \\vspace{1mm}%
+         }%
+       }%
+     }
+     \\newcommand{\\refdefined}[1]{
+     \\expandafter\\ifx\\csname r@#1\\endcsname\\relax
+     \\relax\\else
+     {$dollar(${dollar}in \\ref{#1}, page \\pageref{#1}$dollar)$dollar}\\fi}
+     \\date{\\today}
+     \\chardef\\textbackslash=`\\\\
+     \\makeindex
+     \\begin{document}
+     \\sloppy
+     \\addtocontents{toc}{\\protect\\markboth{Contents}{Contents}}
+     \\tableofcontents
+      """
   }
 
 
@@ -332,6 +341,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
 
-  def latexEnder: String = """\printindex
-                      \end{document}"""
+  def latexEnder: String = """
+                            \printindex
+                            \end{document}
+                           """
 }
