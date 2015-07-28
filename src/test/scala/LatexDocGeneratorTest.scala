@@ -73,7 +73,22 @@ class LatexDocGeneratorTest extends FunSuite {
   }
 
 
-  test("type member support") {
+  test("type abstract member support") {
+    import newmodel._
+    val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo", Seq(), Comment(""), Seq())))
+    val `type z` = Decl.Type(Nil, Type.Name("z", Seq()), Nil, Type.Bounds(None, None))
+    println(latexGenerator.dumpAbstractTypeMember(`type z`))
+  }
 
+
+  test("type member support") {
+    import newmodel._
+    val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo", Seq(), Comment(""), Seq())))
+    val `Int` = Type.Name("Int", Seq(Term.Name("scala", Seq()), Type.Name("Int", Seq())))
+    val `Seq[Int]` = Type.Apply(
+      Type.Name("Seq", Seq(Term.Name("scala", Seq()), Term.Name("collection", Seq()), Type.Name("Seq", Seq()))),
+      Seq(`Int`))
+    val `type z = Seq[Int]` = Defn.Type(Nil, Type.Name("z", Seq()), Nil, `Seq[Int]`)
+    println(latexGenerator.dumpTypeMember(`type z = Seq[Int]`))
   }
 }

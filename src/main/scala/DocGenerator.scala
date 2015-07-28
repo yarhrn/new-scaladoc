@@ -108,6 +108,19 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     s"type $name = $body"
   }
 
+  def dumpAbstractTypeMember(tpe: Decl.Type): String = {
+    val name = dumpType(tpe.name)
+    val tparams = dumpTypeParams(tpe.tparams)
+    val bounds = dumpTypeBounds(tpe.bounds)
+    s"type $name$tparams$bounds"
+  }
+
+  def dumpTypeBounds(bounds: Type.Bounds): String = {
+    val lo = bounds.lo.map(" >: " + dumpType(_)).getOrElse("")
+    val hi = bounds.hi.map(" <: " + dumpType(_)).getOrElse("")
+    s"$hi $lo"
+  }
+
   def processTrait(trt: Trait): String = {
     val name = trt.name
     val comment = trt.comment.rawComment
@@ -225,11 +238,10 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
       case e: Type.Param => {
         val name = dumpType(e.name)
         val tparams = dumpTypeParams(e.tparams)
-        val lo = e.typeBounds.lo.map(" >: " + dumpType(_)).getOrElse("")
-        val hi = e.typeBounds.hi.map(" <: " + dumpType(_)).getOrElse("")
         val ctx = e.contextBounds.map(dumpType).map(": " + _).mkString(" ")
         val view = e.viewBounds.map(dumpType).map("<% " + _).mkString(" ")
-        "[" + name + tparams + hi + lo + ctx + view + "]"
+        val bounds = dumpTypeBounds(e.typeBounds)
+        "[" + name + tparams + bounds + ctx + view + "]"
       }
     }
   }
