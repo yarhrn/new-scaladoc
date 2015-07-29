@@ -71,7 +71,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
       case e: Tree => "nvm"
     }
     val objects = pack.stats.collect { case o: Object => o }
-    val traits = pack.stats.collect { case t: Trait => t }
+    val traits: Seq[Trait] = pack.stats.collect { case t: Trait => t }
     """
       \chapter{Package org}{
     """ ++
@@ -80,15 +80,15 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
          }\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-      """ ++ processObjects(objects)
+      """ ++ processObjects(objects) ++ "\n" ++ processTraits(traits)
   }
 
   def processObjects(classes: Seq[Object]) = {
     "\\hbox{{\\bf  Objects}}" ++ classes.map(processObject).mkString("\n")
   }
 
-  def processTraits(classes: Seq[Trait]) = {
-    "\\hbox{{\\bf  Objects}}" ++ classes.map(processTrait).mkString("\n")
+  def processTraits(traits: Seq[Trait]) = {
+    "\\hbox{{\\bf  Traits}}" ++ traits.map(processTrait).mkString("\n")
   }
 
   def dumpParent(tpe: Type.Name) = {
@@ -105,14 +105,14 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   def dumpTypeMember(tpe: Defn.Type): String = {
     val name = dumpType(tpe.name)
     val body = dumpType(tpe.body)
-    s"type $name = $body"
+    s" \\item{type $name = $body}"
   }
 
   def dumpAbstractTypeMember(tpe: Decl.Type): String = {
     val name = dumpType(tpe.name)
     val tparams = dumpTypeParams(tpe.tparams)
     val bounds = dumpTypeBounds(tpe.bounds)
-    s"type $name$tparams$bounds"
+    s" \\item{type $name$tparams$bounds}"
   }
 
   def dumpTypeBounds(bounds: Type.Bounds): String = {
@@ -122,12 +122,17 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
   def processTrait(trt: Trait): String = {
-    val name = trt.name
+    val name = trt.name.name
     val comment = trt.comment.rawComment
     val methodsSummary = processMethodsSummary(trt.templ.stats)
-    val methods = {
-      trt.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
-    }
+    val methods = trt.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+    val extnds = if (trt.templ.parents.isEmpty)
+      ""
+    else
+      "extends"
+    val typeAlias = trt.templ.stats.collect { case m: Defn.Type => dumpTypeMember(m) }.mkString("\n")
+    val typeMembers = trt.templ.stats.collect { case m: Decl.Type => dumpAbstractTypeMember(m) }.mkString("\n")
+
     val mods = trt.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
     val link = hypertarget(trt.name, Some(trt.name.name))
     val parent = trt.templ.parents.map(dumpParent).mkString(" with ")
@@ -136,31 +141,44 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\vskip .1in
         \\vskip .1in
         $link
-        \\section{object $name}{
+        \\section{trait $name}{
         \\vskip .1in
         $comment
         \\subsection{Declaration}{
         \\begin{lstlisting}[frame=none]
-        $mods trait ${trt.name.name} extends $parent
+        {$mods trait $name $extnds $parent}
         \\end{lstlisting}
-        $methodsSummary
         \\subsection{Methods}{
         \\vskip -2em
         \\begin{itemize}
         $methods
         \\end{itemize}
+        }
+        \\subsection{Type}{
+        \\vskip -2em
+        \\begin{itemize}
+        $typeAlias
+        $typeMembers
+        \\end{itemize}
         }}
       """
+
   }
 
   def processObject(obj: Object): String = {
-    val name = obj.name
+    val name = obj.name.name
     val comment = obj.comment.rawComment
-    val methodsSummary = processMethodsSummary(obj.templ.stats)
     val methods =
       obj.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
     val mods = obj.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
+    val typeAlias = obj.templ.stats.collect { case m: Defn.Type => dumpTypeMember(m) }.mkString("\n")
+    val typeMembers = obj.templ.stats.collect { case m: Decl.Type => dumpAbstractTypeMember(m) }.mkString("\n")
     val link = hypertarget(obj.name, Some(obj.name.name))
+    val extnds = if (obj.templ.parents.isEmpty)
+      ""
+    else
+      "extends"
+    val parent = obj.templ.parents.map(dumpParent).mkString(" with ")
     s"""
         \\entityintro{$name}{}{$comment}
         \\vskip .1in
@@ -170,14 +188,18 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\vskip .1in
         $comment
         \\subsection{Declaration}{
-        \\begin{lstlisting}[frame=none]
-        $mods object ${obj.name}
-        \\end{lstlisting}
-        $methodsSummary
+
+        {$mods object $name $extnds $parent}
         \\subsection{Methods}{
         \\vskip -2em
         \\begin{itemize}
         $methods
+        \\end{itemize}
+        }}\\subsection{Type}{
+        \\vskip -2em
+        \\begin{itemize}
+        $typeAlias
+        $typeMembers
         \\end{itemize}
         }}
       """
