@@ -5,7 +5,7 @@ class LatexDocGeneratorTest extends FunSuite {
   lazy val model1Sample: String = io.Source.fromFile("src/test/resources/util.model1.latex").mkString
   test("basic test for latex generation") {
 
-    println( new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
+    println(new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
   }
 
   test("basic test for dumpTypes") {
@@ -90,5 +90,65 @@ class LatexDocGeneratorTest extends FunSuite {
       Seq(`Int`))
     val `type z = Seq[Int]` = Defn.Type(Nil, Type.Name("z", Seq()), Nil, `Seq[Int]`)
     println(latexGenerator.dumpTypeMember(`type z = Seq[Int]`))
+  }
+
+
+  test("nested support") {
+    import newmodel._
+    val `B type name` = Type.Name("B", Seq(Type.Name("A", Seq()), Type.Name("B", Seq())))
+    val `C type name` = Type.Name("C", Seq(Type.Name("A", Seq()), Type.Name("B", Seq()), Type.Name("C", Seq())))
+    val `D type name` = Type.Name("D", Seq(Type.Name("A", Seq()), Type.Name("B", Seq()), Type.Name("C", Seq()), Type.Name("D", Seq())))
+    val `E type name` = Type.Name("E", Seq(Type.Name("A", Seq()), Type.Name("B", Seq()), Type.Name("C", Seq()), Type.Name("D", Seq()), Type.Name("E", Seq())))
+    val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo", Seq(), Comment(""), Seq())))
+
+    class A{ class B{ class C{ class D{ class E}}}}
+    val teamplate = Template(
+      Seq(),
+      Seq(Defn.Class(
+        `B type name`,
+        None,
+        Comment(""),
+        Seq(),
+        Seq(),
+        SourceFile("asd"),
+        Template(Seq(),
+          Seq(Defn.Class(
+            `C type name`,
+            None,
+            Comment(""),
+            Seq(),
+            Seq(),
+            SourceFile("asd"),
+            Template(Seq(),
+              Seq(Defn.Class(
+                `D type name`,
+                None,
+                Comment(""),
+                Seq(),
+                Seq(),
+                SourceFile("asd"),
+                Template(Seq(),
+                  Seq(Defn.Class(
+                    `E type name`,
+                    None,
+                    Comment(""),
+                    Seq(),
+                    Seq(),
+                    SourceFile("asd"),
+                    Template(Seq(),
+                      Seq()),
+                    None
+                  ))),
+                None
+              ))),
+            None
+          ))),
+        None
+      )
+      )
+    )
+
+
+    println(latexGenerator.dumpNested("A",teamplate)._2)
   }
 }
