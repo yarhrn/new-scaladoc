@@ -22,7 +22,7 @@ class LatexDocGeneratorTest extends FunSuite {
     assert(latexGenerator.dumpType(tpe) == "\\hyperlink{scala.collection.Seq}{Seq}[\\hyperlink{scala.Int}{Int}]")
 
     val `[T]` = Type.Param(Nil, Type.Name("T", Seq()), Nil, Type.Bounds(None, None), Nil, Nil)
-    assert(latexGenerator.dumpType(`[T]`) == "[T]")
+    assert(latexGenerator.dumpType(`[T]`) == "[[\\hyperlink{}{T} ]]")
 
     val `[A >: Int <% CustomClass[A]]` = Type.Param(
       Nil,
@@ -90,5 +90,12 @@ class LatexDocGeneratorTest extends FunSuite {
       Seq(`Int`))
     val `type z = Seq[Int]` = Defn.Type(Nil, Type.Name("z", Seq()), Nil, `Seq[Int]`)
     println(latexGenerator.dumpTypeMember(`type z = Seq[Int]`))
+  }
+
+  test("special name handling test"){
+    import newmodel._
+    val latexGenerator = new LatexDocGenerator(Index(newmodel.Pkg("foo", Seq(), Comment(""), Seq())))
+    val `Seq.Seq` = Seq(Type.Name("Seq.Seq",Seq()))
+    assert(latexGenerator.link(`Seq.Seq`) == "Seq$u002ESeq")
   }
 }
