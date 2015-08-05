@@ -2,6 +2,8 @@ import newmodel.Decl.Def
 import newmodel.Defn.{Class, Object, Trait}
 import newmodel._
 
+import scala.reflect.NameTransformer
+
 
 trait DocGenerator {
   def generate(root: Pkg): String
@@ -342,29 +344,19 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
      \\tableofcontents
       """
   }
-
-
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
-    val t = text.getOrElse("")
-    if (e.id.isEmpty)
-      t
-    else
-      s"\\hypertarget{${link(e.id)}}{$t}"
+    text.map(t => s"\\hypertarget{${link(e.id)}}{$t}").getOrElse("")
   }
 
   def hyperlink(e: {def id: Seq[Tree]}, text: Option[String]) = {
-    val t = text.getOrElse("")
-    if (e.id.isEmpty)
-      t
-    else
-      s"\\hyperlink{${link(e.id)}}{$t}"
+    text.map(t => s"\\hyperlink{${link(e.id)}}{$t}").getOrElse("")
   }
 
   def link(tpe: Seq[Tree]) = {
     val termToTerm = "."
     val termToType = "."
-    val typeToType = "#"
-    val typeToTerm = "#"
+    val typeToType = "\\#"
+    val typeToTerm = "\\#"
     def separtor(s: Tree, i: Int): String = if (s != tpe.last) {
       (s, tpe(i + 1)) match {
         case (e1: Term.Name, e2: Type.Name) => e1.name + termToType
@@ -373,8 +365,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         case (e1: Type.Name, e2: Term.Name) => e1.name + typeToTerm
       }
     } else s match {
-      case s: Type.Name => s.name
-      case s: Term.Name => s.name
+      case s: Type.Name => NameTransformer.encode(s.name)
+      case s: Term.Name => NameTransformer.encode(s.name)
     }
     tpe.zipWithIndex.map {
       case (e, i) => separtor(e, i)
