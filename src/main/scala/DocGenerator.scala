@@ -167,6 +167,29 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
 
   }
 
+
+  def dumpNested(name: String, tmpl: Template) = {
+    val maxLVL = 4
+    def loop(pname: String, tmpl: Template, lvl: Int): (String, Seq[Stat]) = {
+      val d = tmpl.stats.collect {
+        case e: Object => (e.name, e.templ, e)
+        case e: Trait => (e.name, e.templ, e)
+        case e: Class => (e.name, e.templ, e)
+      }.map { case (cname, teamplate, stat) =>
+        val prepend = if (lvl > maxLVL) pname + "#" else ""
+        val item = s"\\item ${hyperlink(cname, Some(prepend ++ cname.name))}\n"
+        val (childTex, childStat) = loop(cname.name, teamplate, lvl + 1)
+        val wrapped = if (lvl  < maxLVL && childStat.nonEmpty) "\\begin{enumerate}\n" + childTex + "\n\\end{enumerate}" else childTex
+        (item ++ wrapped, stat +: childStat)
+      }.unzip
+      (d._1.mkString("\n"), d._2.flatten)
+    }
+    val d = loop(name, tmpl, 2)
+    ("\\begin{enumerate}\n" ++
+      d._1 ++
+      "\n\\end{enumerate}", d._2)
+  }
+
   def processObject(obj: Object): String = {
     val name = obj.name.name
     val comment = obj.comment.rawComment
