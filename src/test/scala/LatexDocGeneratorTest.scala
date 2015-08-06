@@ -4,7 +4,6 @@ import org.scalatest.FunSuite
 class LatexDocGeneratorTest extends FunSuite {
   lazy val model1Sample: String = io.Source.fromFile("src/test/resources/util.model1.latex").mkString
   test("basic test for latex generation") {
-
     println(new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
   }
 
@@ -69,7 +68,7 @@ class LatexDocGeneratorTest extends FunSuite {
     )
 
     val gen = new LatexDocGenerator(Index(org))
-    println(gen.processTrait(trt))
+    println(gen.processTrait(trt,""))
   }
 
 
