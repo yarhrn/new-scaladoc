@@ -423,7 +423,6 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
      \\tableofcontents
       """
   }
-
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
     text.map(t => s"\\hypertarget{${link(e.id)}}{$t}").getOrElse("")
   }
