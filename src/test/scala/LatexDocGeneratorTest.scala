@@ -4,7 +4,6 @@ import org.scalatest.FunSuite
 class LatexDocGeneratorTest extends FunSuite {
   lazy val model1Sample: String = io.Source.fromFile("src/test/resources/util.model1.latex").mkString
   test("basic test for latex generation") {
-
     println(new LatexDocGenerator(Index(Util.model1)).generate(Util.model1))
   }
 
@@ -22,7 +21,7 @@ class LatexDocGeneratorTest extends FunSuite {
     assert(latexGenerator.dumpType(tpe) == "\\hyperlink{scala.collection.Seq}{Seq}[\\hyperlink{scala.Int}{Int}]")
 
     val `[T]` = Type.Param(Nil, Type.Name("T", Seq()), Nil, Type.Bounds(None, None), Nil, Nil)
-    assert(latexGenerator.dumpType(`[T]`) == "[T]")
+    assert(latexGenerator.dumpType(`[T]`) == "[[\\hyperlink{}{T} ]]")
 
     val `[A >: Int <% CustomClass[A]]` = Type.Param(
       Nil,
@@ -69,7 +68,7 @@ class LatexDocGeneratorTest extends FunSuite {
     )
 
     val gen = new LatexDocGenerator(Index(org))
-    println(gen.processTrait(trt))
+    println(gen.processTrait(trt,""))
   }
 
 
