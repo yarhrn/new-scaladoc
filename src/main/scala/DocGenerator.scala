@@ -66,14 +66,9 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
   def processPackage(pack: Pkg): String = {
-    val grouped: Map[String, Seq[Tree]] = pack.stats.groupBy {
-      case e: Class => "classes"
-      case e: Object => "objects"
-      case e: Trait => "traits"
-      case e: Tree => "nvm"
-    }
-    val objects = pack.stats.collect { case o: Object => o }
-    val traits: Seq[Trait] = pack.stats.collect { case t: Trait => t }
+    val (traitsTex, traitsNested) = processTraits(pack.stats.collect { case t: Trait => t })
+    val (objectsTex, objectsNested) = processObjects(pack.stats.collect { case o: Object => o })
+    val (classesTex, classesNested) = processClasses(pack.stats.collect { case c: Class => c })
     """
       \chapter{Package org}{
     """ ++
@@ -82,15 +77,37 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
          }\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-      """ ++ processObjects(objects) ++ "\n" ++ processTraits(traits)
+      """ ++ objectsTex ++ "\n" ++ traitsTex ++ "\n" ++ classesTex
   }
 
-  def processObjects(classes: Seq[Object]) = {
-    "\\hbox{{\\bf  Objects}}" ++ classes.map(processObject).mkString("\n")
+
+  def processClasses(classes: Seq[Class]) = {
+    val (tex, nested) = genericProcess(classes, processClass, (e: Class) => dumpNested(e.name.name, e.templ))
+    ("\\hbox{{\\bf  Classes}}\n" ++ tex, nested)
+  }
+
+  def processObjects(objects: Seq[Object]) = {
+    val (tex, nested) = genericProcess(objects, processObject, (e: Object) => dumpNested(e.name.name, e.templ))
+    ("\\hbox{{\\bf  Objects}}\n" ++ tex, nested)
   }
 
   def processTraits(traits: Seq[Trait]) = {
-    "\\hbox{{\\bf  Traits}}" ++ traits.map(processTrait).mkString("\n")
+    val (tex, nested) = genericProcess(traits, processTrait, (e: Trait) => dumpNested(e.name.name, e.templ))
+    ("\\hbox{{\\bf  Traits}}\n" ++ tex, nested)
+  }
+
+  def genericProcess[A <: Defn](elems: Seq[A],
+                                process: (A, String) => String,
+                                nested: A => (String, Seq[Stat])): (String, Seq[Stat]) = {
+    val unwrpd: Seq[(A, String, Seq[Stat])] = elems.map { e =>
+      nested(e) match {
+        case (nestedTex, stats) => (e, nestedTex, stats)
+      }
+    }
+    (unwrpd.map {
+      case (trt, nstd, ignored) =>
+        process(trt, nstd)
+    }.mkString("\n"), unwrpd.flatMap(_._3))
   }
 
   def dumpParent(tpe: Type.Name) = {
@@ -123,7 +140,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
     s"$hi $lo"
   }
 
-  def processTrait(trt: Trait): String = {
+  def processTrait(trt: Trait, nested: String): String = {
     val name = trt.name.name
     val comment = trt.comment.rawComment
     val methodsSummary = processMethodsSummary(trt.templ.stats)
@@ -167,7 +184,30 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
 
   }
 
-  def processObject(obj: Object): String = {
+
+  def dumpNested(name: String, tmpl: Template): (String, Seq[Stat]) = {
+    val maxLVL = 4
+    def loop(pname: String, tmpl: Template, lvl: Int): (String, Seq[Stat]) = {
+      val d = tmpl.stats.collect {
+        case e: Object => (e.name, e.templ, e)
+        case e: Trait => (e.name, e.templ, e)
+        case e: Class => (e.name, e.templ, e)
+      }.map { case (cname, teamplate, stat) =>
+        val prepend = if (lvl > maxLVL) pname + "#" else ""
+        val item = s"\\item ${hyperlink(cname, Some(prepend ++ cname.name))}\n"
+        val (childTex, childStat) = loop(cname.name, teamplate, lvl + 1)
+        val wrapped = if (lvl < maxLVL && childStat.nonEmpty) "\\begin{enumerate}\n" + childTex + "\n\\end{enumerate}" else childTex
+        (item ++ wrapped, stat +: childStat)
+      }.unzip
+      (d._1.mkString("\n"), d._2.flatten)
+    }
+    val d = loop(name, tmpl, 2)
+    ("\\begin{enumerate}\n" ++
+      d._1 ++
+      "\n\\end{enumerate}", d._2)
+  }
+
+  def processObject(obj: Object, nested: String): String = {
     val name = obj.name.name
     val comment = obj.comment.rawComment
     val methods =
@@ -191,6 +231,45 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         $comment
         \\subsection{Declaration}{
 
+        {$mods object $name $extnds $parent}
+        \\subsection{Methods}{
+        \\vskip -2em
+        \\begin{itemize}
+        $methods
+        \\end{itemize}
+        }}\\subsection{Type}{
+        \\vskip -2em
+        \\begin{itemize}
+        $typeAlias
+        $typeMembers
+        \\end{itemize}
+        }}
+      """
+  }
+
+  def processClass(cls: Class, nested: String): String = {
+    val name = cls.name.name
+    val comment = cls.comment.rawComment
+    val methods =
+      cls.templ.stats.collect { case m: Def => processMethod(m) }.mkString("\n")
+    val mods = cls.mods.map(_.getClass.getSimpleName.toLowerCase).mkString(" ")
+    val typeAlias = cls.templ.stats.collect { case m: Defn.Type => dumpTypeMember(m) }.mkString("\n")
+    val typeMembers = cls.templ.stats.collect { case m: Decl.Type => dumpAbstractTypeMember(m) }.mkString("\n")
+    val link = hypertarget(cls.name, Some(cls.name.name))
+    val extnds = if (cls.templ.parents.isEmpty)
+      ""
+    else
+      "extends"
+    val parent = cls.templ.parents.map(dumpParent).mkString(" with ")
+    s"""
+        \\entityintro{$name}{}{$comment}
+        \\vskip .1in
+        \\vskip .1in
+        $link
+        \\section{object $name}{
+        \\vskip .1in
+        $comment
+        \\subsection{Declaration}{
         {$mods object $name $extnds $parent}
         \\subsection{Methods}{
         \\vskip -2em
@@ -345,7 +424,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
       """
   }
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
-    text.map(t => s"\\hyperlink{${link(e.id)}}{$t}").getOrElse("")
+    text.map(t => s"\\hypertarget{${link(e.id)}}{$t}").getOrElse("")
   }
 
   def hyperlink(e: {def id: Seq[Tree]}, text: Option[String]) = {
@@ -355,8 +434,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   def link(tpe: Seq[Tree]) = {
     val termToTerm = "."
     val termToType = "."
-    val typeToType = "#"
-    val typeToTerm = "#"
+    val typeToType = "\\#"
+    val typeToTerm = "\\#"
     def separtor(s: Tree, i: Int): String = if (s != tpe.last) {
       (s, tpe(i + 1)) match {
         case (e1: Term.Name, e2: Type.Name) => e1.name + termToType
