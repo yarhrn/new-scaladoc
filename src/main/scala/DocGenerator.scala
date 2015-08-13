@@ -37,6 +37,13 @@ object PlainStringGenerator extends DocGenerator {
   }
 }
 
+
+object LatexDocGenerator {
+  def apply(root: Pkg) = {
+    new LatexDocGenerator(Index(root)).generate(root)
+  }
+}
+
 class LatexDocGenerator(index: Index) extends DocGenerator {
 
 
@@ -112,10 +119,10 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
 
   def dumpParent(tpe: Type.Name) = {
     val p = index.getByLink(tpe.id)
-    val (name, tparams) = p match {
-      case Some(o: Object) => (o.name, Seq())
+    val (name: {def name: String; def id: Seq[Tree]}, tparams) = p match {
       case Some(o: Trait) => (o.name, o.tparams)
       case Some(o: Class) => (o.name, o.tparams)
+      case Some(o: Object) => (o.name, Seq())
     }
     hyperlink(name, Some(name.name)) ++ dumpTypeParams(tparams)
   }
@@ -192,7 +199,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         case e: Object => (e.name, e.templ, e)
         case e: Trait => (e.name, e.templ, e)
         case e: Class => (e.name, e.templ, e)
-      }.map { case (cname, teamplate, stat) =>
+      }.map { case (cname: {def name: String; def id: Seq[Tree]}, teamplate, stat) =>
         val prepend = if (lvl > maxLVL) pname + "#" else ""
         val item = s"\\item ${hyperlink(cname, Some(prepend ++ cname.name))}\n"
         val (childTex, childStat) = loop(cname.name, teamplate, lvl + 1)
@@ -362,7 +369,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\item{
         \\index{$linkId}
         {\\bf  $methodRef}
-            $mods def $tparams($signature) : $returnType
+            $mods def $name$tparams($signature) : $returnType
         \\begin{itemize}
         \\item{
         {\\bf  Description}
@@ -423,6 +430,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
      \\tableofcontents
       """
   }
+
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
     text.map(t => s"\\hypertarget{${link(e.id)}}{$t}").getOrElse("")
   }

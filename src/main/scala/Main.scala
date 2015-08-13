@@ -1,4 +1,4 @@
-import java.io.{BufferedWriter, FileWriter}
+
 
 object Main {
   def main(args: Array[String]): Unit = {
@@ -6,9 +6,10 @@ object Main {
     val model = dummyModel
     val generator = new LatexDocGenerator(Index(model))
     val latexdoc = generator.generate(model)
-    val w = new BufferedWriter(new FileWriter("doc.tex"))
-    w.write(latexdoc)
-    w.close()
+    println(latexdoc)
+//    val w = new BufferedWriter(new FileWriter("doc.tex"))
+//    w.write(latexdoc)
+//    w.close()
     println("End doc generating")
   }
 
@@ -50,7 +51,7 @@ object Main {
       Seq(newmodel.Mod.Override),
       Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()), Term.Name("hello", Seq())))
     val orgFoo = newmodel.Defn.Object(
-      Type.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()))),
+      Term.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()))),
       newmodel.Template(Seq(Type.Name("Bar", Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq())))), Seq(orgFooFoo, orgFooHello, defnType)),
       Comment("stub"),
       Seq(),
