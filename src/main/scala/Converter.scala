@@ -5,9 +5,9 @@ import newmodel.Term.Param
 import newmodel._
 
 import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
 import scala.meta.internal.ast
 import scala.meta.internal.hosts.scalac.contexts.StandaloneContext
-import scala.meta.ui.Structure
 
 
 object ScalametaConverter {
@@ -89,13 +89,14 @@ object ScalametaConverter {
 }
 
 object ConverterExecutor {
+
+
   def main(args: Array[String]): Unit = {
     val scalaLibraryJar = classOf[App].getProtectionDomain().getCodeSource()
     val scalaLibraryPath = scalaLibraryJar.getLocation().getFile()
     import scala.meta._
     import scala.meta.dialects.Scala211
     implicit val c: StandaloneContext = Scalahost.mkStandaloneContext(s"-cp $scalaLibraryPath")
-
 
     def loop(files: Seq[File]): Seq[File] = if (files.nonEmpty) {
       files.filter(_.getName.endsWith(".scala")) ++ files.filter(e => e.isDirectory).flatMap(e => loop(e.listFiles))
@@ -104,7 +105,7 @@ object ConverterExecutor {
     }
 
     val sources: Seq[Option[Source]] =
-      loop(new File("C:\\Users\\yaroslav\\Documents\\new-scaladoc\\src\\main\\scala").listFiles()).map {
+      loop(new File("C:\\Users\\yaroslav\\Documents\\new-scaladoc\\src\\main\\scala\\test").listFiles()).map {
         a =>
           try
             Some(a.parse[Source])
@@ -115,13 +116,42 @@ object ConverterExecutor {
 
     val someSources: Seq[Source] = sources.collect { case Some(a) => a }
 
-    //println(ScalametaConverter.convert(someSources.last.asInstanceOf[ast.Source].stats(0).asInstanceOf[ast.Pkg]))
-    println(someSources.last.asInstanceOf[ast.Source].show[Structure])
+    import scala.meta.internal.ast._
+    import scala.meta.{Template => _, Term => _, _}
 
+    val classes = new scala.collection.mutable.ListBuffer[ast.Pkg]()
 
-    val a: Source = new java.io.File("C:\\Users\\yaroslav\\Documents\\new-scaladoc\\src\\main\\scala\\test\\Test.scala").parse[Source]
-    val tokens: Tokens = a.asInstanceOf[ast.Source].stats(0).asInstanceOf[ast.Pkg].tokens
+    someSources.foreach {
+      case a: ast.Source => a.transform {
+        case a: Pkg =>
+          classes += a
+          a
+      }
+    }
+    val pkgsWithStats = classes.map(retrivePkgAndSupportedStats).collect { case Some(a) => a }
+    val converted: ListBuffer[(String, Seq[newmodel.Stat])] = pkgsWithStats.map {
+      case (name, stats) =>
+        (name, stats.collect {
+          case a: Defn.Class => ScalametaConverter.convertClass(a)
+          case a: Defn.Object => ScalametaConverter.convertObject(a)
+          case a: Defn.Trait => ScalametaConverter.convertTrait(a)
+        })
+    }
+    val hierarchy = buildHierarchy(converted)
+    println(LatexDocGenerator(hierarchy))
   }
 
+  def buildHierarchy(stats: Seq[(String, Seq[Stat])]) = {
+    val pkgs: Seq[Stat] = stats.groupBy(_._1).map(e => (e._1, e._2.flatMap(_._2))).map(e => Pkg(e._1, e._2, Comment(""), Seq())).toList
+    Pkg("_root_",
+      pkgs,
+      Comment(""),
+      Seq())
+  }
 
+  def retrivePkgAndSupportedStats(src: ast.Pkg): Option[(String, Seq[ast.Stat])] = src match {
+    case ast.Pkg(name, stats: immutable.Seq[ast.Stat]) =>
+      Some((name.toString().trim, stats))
+    case _ => None
+  }
 }

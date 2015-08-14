@@ -73,34 +73,53 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
   def processPackage(pack: Pkg): String = {
-    val (traitsTex, traitsNested) = processTraits(pack.stats.collect { case t: Trait => t })
-    val (objectsTex, objectsNested) = processObjects(pack.stats.collect { case o: Object => o })
-    val (classesTex, classesNested) = processClasses(pack.stats.collect { case c: Class => c })
-    """
-      \chapter{Package org}{
-    """ ++
-      hypertarget(pack, None) ++
+    if (pack.stats.nonEmpty) {
+      val traits = processTraits(pack.stats.collect { case t: Trait => t })
+      val objects = processObjects(pack.stats.collect { case o: Object => o })
+      val classes = processClasses(pack.stats.collect { case c: Class => c })
       """
+      \chapter{Package """++pack.name++"""}{
+      """ ++
+        hypertarget(pack, None) ++
+        """
          }\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-      """ ++ objectsTex ++ "\n" ++ traitsTex ++ "\n" ++ classesTex
+        """ ++
+        objects.map(_._1).getOrElse("") ++ "\n" ++
+        traits.map(_._1).getOrElse("") ++ "\n" ++
+        classes.map(_._1).getOrElse("")
+    } else {
+      ""
+    }
   }
 
 
   def processClasses(classes: Seq[Class]) = {
-    val (tex, nested) = genericProcess(classes, processClass, (e: Class) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Classes}}\n" ++ tex, nested)
+    if (classes.nonEmpty) {
+      val (tex, nested) = genericProcess(classes, processClass, (e: Class) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Classes}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def processObjects(objects: Seq[Object]) = {
-    val (tex, nested) = genericProcess(objects, processObject, (e: Object) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Objects}}\n" ++ tex, nested)
+    if (objects.nonEmpty) {
+      val (tex, nested) = genericProcess(objects, processObject, (e: Object) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Objects}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def processTraits(traits: Seq[Trait]) = {
-    val (tex, nested) = genericProcess(traits, processTrait, (e: Trait) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Traits}}\n" ++ tex, nested)
+    if (traits.nonEmpty) {
+      val (tex, nested) = genericProcess(traits, processTrait, (e: Trait) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Traits}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def genericProcess[A <: Defn](elems: Seq[A],
