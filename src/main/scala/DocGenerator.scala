@@ -73,13 +73,16 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
   def processPackage(pack: Pkg): String = {
-    if (pack.stats.nonEmpty) {
+    if (pack.stats.count {
+      case e: Pkg => true
+      case _ => false
+    } != pack.stats.length) {
       val traits = processTraits(pack.stats.collect { case t: Trait => t })
       val objects = processObjects(pack.stats.collect { case o: Object => o })
       val classes = processClasses(pack.stats.collect { case c: Class => c })
       """
-      \chapter{Package """++pack.name++"""}{
-      """ ++
+      \chapter{Package """ ++ pack.name ++ """}{
+                                           """ ++
         hypertarget(pack, None) ++
         """
          }\hskip -.05in
@@ -193,21 +196,38 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\begin{lstlisting}[frame=none]
         {$mods trait $name $extnds $parent}
         \\end{lstlisting}
+        ${methodSection(methods)}
+        ${typeSection(typeAlias, typeMembers)}
+      """
+
+  }
+
+  def methodSection(methods: String): String = {
+    if (methods.isEmpty) {
+      ""
+    } else
+      s"""
         \\subsection{Methods}{
         \\vskip -2em
         \\begin{itemize}
         $methods
         \\end{itemize}
-        }
-        \\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
-      """
+        }"""
+  }
 
+  def typeSection(typeAlias: String, typeMembers: String): String = {
+    if (typeAlias.trim.isEmpty && typeMembers.trim.isEmpty) {
+      ""
+    } else
+      s"""
+       \\subsection{Type}{
+       \\vskip -2em
+       \\begin{itemize}
+      $typeAlias
+      $typeMembers
+      \\end{itemize}
+      }}
+     """
   }
 
 
@@ -258,18 +278,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\subsection{Declaration}{
 
         {$mods object $name $extnds $parent}
-        \\subsection{Methods}{
-        \\vskip -2em
-        \\begin{itemize}
-        $methods
-        \\end{itemize}
-        }}\\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
+      ${methodSection(methods)}
+      ${typeSection(typeAlias, typeMembers)}
       """
   }
 
@@ -297,18 +307,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         $comment
         \\subsection{Declaration}{
         {$mods object $name $extnds $parent}
-        \\subsection{Methods}{
-        \\vskip -2em
-        \\begin{itemize}
-        $methods
-        \\end{itemize}
-        }}\\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
+      ${methodSection(methods)}
+      ${typeSection(typeAlias, typeMembers)}
       """
   }
 

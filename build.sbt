@@ -16,11 +16,18 @@ resolvers += "Example Plugin Repository" at "https://example.org/repo/"
 packAutoSettings
 
 commands += Command.args("gendoc", "args") { (state, args) =>
+  def getOsName =System.getProperty("os.name", "unknown")
+  def isWindows = getOsName.toLowerCase.indexOf("windows") >= 0
+
   Project.runTask(pack, state)
-  val List(src, compiled) = args
-  println("target\\pack\\bin\\main.bat" :: src :: compiled :: Nil !!)
+  val List(src) = args
+  if(isWindows){
+    println("target\\pack\\bin\\main.bat" :: src :: Nil !!)
+  }else{
+    println("target/pack/bin/main" :: src :: Nil !!)
+  }
   val pdfCmd = "pdflatex" :: "-interaction=nonstopmode" :: "--aux-directory=temp" :: "doc.tex" :: Nil
-  pdfCmd run()
-  pdfCmd run()
+  pdfCmd.run().exitValue()
+  pdfCmd.run().exitValue()
   state
 }

@@ -1,13 +1,10 @@
-import java.io.File
-
 import newmodel.Defn.Trait
 import newmodel.Term.Param
 import newmodel._
 
 import scala.collection.immutable
-import scala.collection.mutable.ListBuffer
 import scala.meta.internal.ast
-import scala.meta.internal.hosts.scalac.contexts.StandaloneContext
+import scala.meta.internal.ast.Type.Apply
 
 
 object ScalametaConverter {
@@ -23,33 +20,70 @@ object ScalametaConverter {
 
   def convertTypeName(tpe: ast.Type.Name) = Type.Name(tpe.value, Seq())
 
+  def convertTypeName(tpe: ast.Type.Name, id: Seq[Tree]) = Type.Name(tpe.value, id)
+
   def convertTermName(termName: ast.Term.Name) = Term.Name(termName.value, Seq())
+
+  def convertTermName(termName: ast.Term.Name, id: Seq[Tree]) = Term.Name(termName.value, Seq())
 
   def convertDef(deff: ast.Defn.Def): Decl.Def = newmodel.Decl.Def(
     deff.name.value,
-    STUB_DECLTYPE,
+    deff.decltpe.map(convertType).getOrElse(STUB_DECLTYPE),
     convertSeqSeqParams(deff.paramss),
     convertTypeParams(deff.tparams),
     STUB_COMMENT,
     convertMods(deff.mods),
-    Seq())
+    buildLink(deff))
 
-  def convertTrait(trt: ast.Defn.Trait): Trait = Trait(convertTypeName(trt.name), convertTemplate(trt.templ), STUB_COMMENT, convertMods(trt.mods), convertTypeParams(trt.tparams), STUB_SOURCEFILE)
+  def convertDef(deff: ast.Decl.Def): Decl.Def = newmodel.Decl.Def(
+    deff.name.value,
+    convertType(deff.decltpe),
+    convertSeqSeqParams(deff.paramss),
+    convertTypeParams(deff.tparams),
+    STUB_COMMENT,
+    convertMods(deff.mods),
+    buildLink(deff))
 
-  def convertClass(trt: ast.Defn.Class): newmodel.Defn.Class = newmodel.Defn.Class(convertTypeName(trt.name), None, STUB_COMMENT, convertTypeParams(trt.tparams), convertMods(trt.mods), STUB_SOURCEFILE, convertTemplate(trt.templ), None)
+  def convertTrait(trt: ast.Defn.Trait): Trait =
+    Trait(convertTypeName(trt.name, buildLink(trt)),
+      convertTemplate(trt.templ),
+      STUB_COMMENT,
+      convertMods(trt.mods),
+      convertTypeParams(trt.tparams),
+      STUB_SOURCEFILE)
 
-  def convertObject(trt: ast.Defn.Object): newmodel.Defn.Object = newmodel.Defn.Object(convertTermName(trt.name), convertTemplate(trt.templ), STUB_COMMENT, convertMods(trt.mods), STUB_SOURCEFILE)
+  def convertClass(trt: ast.Defn.Class): newmodel.Defn.Class =
+    newmodel.Defn.Class(convertTypeName(trt.name, buildLink(trt)),
+      None,
+      STUB_COMMENT,
+      convertTypeParams(trt.tparams),
+      convertMods(trt.mods),
+      STUB_SOURCEFILE,
+      convertTemplate(trt.templ),
+      None)
+
+  def convertObject(trt: ast.Defn.Object): newmodel.Defn.Object =
+    newmodel.Defn.Object(convertTermName(trt.name, buildLink(trt)),
+      convertTemplate(trt.templ),
+      STUB_COMMENT,
+      convertMods(trt.mods),
+      STUB_SOURCEFILE)
 
   def convertStats(stats: Option[immutable.Seq[ast.Stat]]): Seq[newmodel.Stat] = stats.map(_.collect(convertStat)).getOrElse(Seq())
 
   def convertDeclType(d: ast.Decl.Type): Decl.Type = Decl.Type(convertMods(d.mods), convertTypeName(d.name), convertTypeParams(d.tparams), convertTypeBounds(d.bounds))
+
+  def convertDefnType(d: ast.Defn.Type): Defn.Type= Defn.Type(convertMods(d.mods),convertTypeName(d.name),convertTypeParams(d.tparams),convertType(d.body))
+
 
   val convertStat: PartialFunction[ast.Stat, Stat] = {
     case e: ast.Defn.Class => convertClass(e)
     case d: ast.Defn.Trait => convertTrait(d)
     case d: ast.Defn.Object => convertObject(d)
     case d: ast.Defn.Def => convertDef(d)
+    case d: ast.Decl.Def => convertDef(d)
     case d: ast.Decl.Type => convertDeclType(d)
+    case d: ast.Defn.Type => convertDefnType(d)
   }
 
 
@@ -63,7 +97,7 @@ object ScalametaConverter {
   def convertTypeParam(tpe: ast.Type.Param): Type.Param =
     Type.Param(
       convertMods(tpe.mods),
-      convert(tpe.name),
+      convertTypeParamName(tpe.name),
       convertTypeParams(tpe.tparams),
       convertTypeBounds(tpe.typeBounds),
       convertTypes(tpe.viewBounds),
@@ -76,82 +110,37 @@ object ScalametaConverter {
 
   def convertTypeParams(tparams: Seq[ast.Type.Param]): Seq[Type.Param] = tparams.map(convertTypeParam)
 
-  def convert(tpn: ast.Type.Param.Name): Type = ???
+  def convertTypeParamName(tpn: ast.Type.Param.Name): Type = Type.Name(tpn.toString().trim,Seq())
 
-  def convertMods(mods: Seq[ast.Mod])(implicit d: DummyImplicit, z: DummyImplicit) = Seq()
+  def convertMods(mods: Seq[ast.Mod]) = Seq()
+
+  def convertTypeApply(t: Apply): Type = Type.Apply(convertType(t.tpe), convertTypes(t.args))
 
   val convertType: PartialFunction[ast.Type, Type] = {
-    case t: ast.Type.Name => convert(t)
+    case t: ast.Type.Name => convertTypeName(t)
     case t: ast.Type.Param => convertTypeParam(t)
+    case t: ast.Type.Apply => convertTypeApply(t)
   }
 
 
+  def buildLink(tree: scala.meta.Tree): Seq[Tree] = {
+    val name = tree match {
+      case e: ast.Defn.Class => Some(Type.Name(e.name.value, Seq()))
+      case e: ast.Defn.Trait => Some(Type.Name(e.name.value, Seq()))
+      case e: ast.Defn.Object => Some(Term.Name(e.name.value, Seq()))
+      case e: ast.Pkg => Some(Term.Name(e.ref.toString().trim, Seq()))
+      case e: ast.Defn.Def => Some(Term.Name(e.name.value, Seq()))
+      case _ => None
+    }
+    val parent = tree.parent
+    name.flatMap { n =>
+      parent.map { p =>
+        buildLink(p) :+ n
+      }
+    }.getOrElse {
+      parent.map(buildLink).getOrElse(Seq())
+    }
+  }
 }
 
-object ConverterExecutor {
 
-
-  def main(args: Array[String]): Unit = {
-    val scalaLibraryJar = classOf[App].getProtectionDomain().getCodeSource()
-    val scalaLibraryPath = scalaLibraryJar.getLocation().getFile()
-    import scala.meta._
-    import scala.meta.dialects.Scala211
-    implicit val c: StandaloneContext = Scalahost.mkStandaloneContext(s"-cp $scalaLibraryPath")
-
-    def loop(files: Seq[File]): Seq[File] = if (files.nonEmpty) {
-      files.filter(_.getName.endsWith(".scala")) ++ files.filter(e => e.isDirectory).flatMap(e => loop(e.listFiles))
-    } else {
-      Seq()
-    }
-
-    val sources: Seq[Option[Source]] =
-      loop(new File("C:\\Users\\yaroslav\\Documents\\new-scaladoc\\src\\main\\scala\\test").listFiles()).map {
-        a =>
-          try
-            Some(a.parse[Source])
-          catch {
-            case e: Exception => println(a); None
-          }
-      }
-
-    val someSources: Seq[Source] = sources.collect { case Some(a) => a }
-
-    import scala.meta.internal.ast._
-    import scala.meta.{Template => _, Term => _, _}
-
-    val classes = new scala.collection.mutable.ListBuffer[ast.Pkg]()
-
-    someSources.foreach {
-      case a: ast.Source => a.transform {
-        case a: Pkg =>
-          classes += a
-          a
-      }
-    }
-    val pkgsWithStats = classes.map(retrivePkgAndSupportedStats).collect { case Some(a) => a }
-    val converted: ListBuffer[(String, Seq[newmodel.Stat])] = pkgsWithStats.map {
-      case (name, stats) =>
-        (name, stats.collect {
-          case a: Defn.Class => ScalametaConverter.convertClass(a)
-          case a: Defn.Object => ScalametaConverter.convertObject(a)
-          case a: Defn.Trait => ScalametaConverter.convertTrait(a)
-        })
-    }
-    val hierarchy = buildHierarchy(converted)
-    println(LatexDocGenerator(hierarchy))
-  }
-
-  def buildHierarchy(stats: Seq[(String, Seq[Stat])]) = {
-    val pkgs: Seq[Stat] = stats.groupBy(_._1).map(e => (e._1, e._2.flatMap(_._2))).map(e => Pkg(e._1, e._2, Comment(""), Seq())).toList
-    Pkg("_root_",
-      pkgs,
-      Comment(""),
-      Seq())
-  }
-
-  def retrivePkgAndSupportedStats(src: ast.Pkg): Option[(String, Seq[ast.Stat])] = src match {
-    case ast.Pkg(name, stats: immutable.Seq[ast.Stat]) =>
-      Some((name.toString().trim, stats))
-    case _ => None
-  }
-}
