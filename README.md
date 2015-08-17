@@ -1,46 +1,51 @@
+Ultradoc: An experimental alternative Scaladoc implementation using Scala meta and producing latex/pdf output.
+
+### Try it
+
+```
+git clone git@github.com:kolowheel/new-scaladoc.git
+cd new-scaladoc
+sbt "gendoc src/main/scala/test/"
+open doc.pdf
+```
+
+Requires `pdflatex` to be installed and on the $PATH. Use [MiKTeX 2.9](http://miktex.org/) on Windows.
+
+Or try it on a custom source directory.
+
 
 ### Motivation
 
-This is base project for new scaladoc implementation. 
-It is intended to give an opportunity to easily add new output formats.
+The original Scaladoc is closely coupled to Scalac. Ultradoc explores an alternative, stand-alone implementation using
+[scalameta](https://github.com/scalameta/scalameta) as a library. This should make it easier to change and extend.
+One application could be adding support for alternative output formats. Currently the only supported target
+format is latex/pdf.
 
-### Project description
+### State of the project 
 
-There is new model that is independetly represent source for documenting.
-For now this model is generating using [scalameta](https://github.com/scalameta/scalameta) api, but it could be generated from any source(compielr plugin, etc.).
-Model locates in [newmodel/DocElement.scala](https://github.com/kolowheel/new-scaladoc/blob/master/src/main/scala/newmodel/DocElement.scala). 
-Current version could generate limited pdf(latex) documentation.
+Ultradoc currently supports the full pipeline from scala source code via scala meta, doc trees and latex to pdf for a limited set of Scala language features. It's not production ready, but can serve as a basis for further development and scala meta based code tools.
 
-Supported file format is : declarated in package classes,traits and objects.
+Currently only source files starting with a package declaration, followed by top-level classes, objects and traits are supported. E.g.
+
 Example
 ```scala
 package test;
 
-class Foo{}
-trait Bar{}
+class Foo{...}
+trait Bar{...}
 ```
 
+### Design decisions
 
-### How to run
+Ultradoc's design breaks up into frontends and backends. Frontends produce ultradoc trees, backends consume them and produce documentation formats. Currently there is only one each. A frontend that uses scala meta to produce ultradoc trees. And a backend that produces latex output from ultradoc trees, which can be turned into PDF. Other backends could be implemented to go to html, html+js, chm or other formats.
 
-##### For Windows:
+Ultradoc's trees ([newmodel/DocElement.scala](https://github.com/kolowheel/new-scaladoc/blob/master/src/main/scala/newmodel/DocElement.scala)) are closely modeled after [scalameta](https://github.com/scalameta/scalameta)'s trees. They contain additional information, for which meta would need a Scala compiler instance to compute them. Ultradoc trees can be used to generate documentation without a compiler instance.
 
-Note: [MiKTeX 2.9](http://miktex.org/) should be installed and added to path
+### Contribute
 
-```
-sbt "gendoc path/to/src"
-```
+The easiest way to contribute is to add support for more language features.
+Another larger feature would be implementing another backend besides the latex backend and generalizing functionality out of `LatexDocGenerator` into `DocGenerator`.
 
-
-##### For Unix-based:
-```
-sbt "gendoc "
-```
-
-
-
-
-
-
-
-
+### Current contributors
+This project started during Google Summer of Code 2015 under the Scala Team organization.
+It is developed by @kolowheel incorporating ideas by @cvogt and @clhodapp.
