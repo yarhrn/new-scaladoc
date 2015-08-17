@@ -26,7 +26,7 @@ commands += Command.args("gendoc", "args") { (state, args) =>
   }else{
     println("target/pack/bin/main" :: src :: Nil !!)
   }
-  val pdfCmd = "pdflatex" :: "-interaction=nonstopmode" :: "--aux-directory=temp" :: "doc.tex" :: Nil
+  val pdfCmd = "pdflatex" :: "-interaction=nonstopmode" :: "doc.tex" :: Nil
   pdfCmd.run().exitValue()
   pdfCmd.run().exitValue()
   state
