@@ -41,7 +41,7 @@ object Util {
       Seq(newmodel.Mod.Override),
       Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()), Term.Name("hello", Seq())))
     val orgFoo = newmodel.Defn.Object(
-      Type.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()))),
+      Term.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()))),
       newmodel.Template(Seq(Type.Name("Bar", Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq())))), Seq(orgFooFoo, orgFooHello,defnType)),
       Comment("stub"),
       Seq(),

@@ -1,100 +1,98 @@
-import java.io.{BufferedWriter, FileWriter}
+import java.io.{BufferedWriter, FileWriter, File}
+
+import newmodel.{Comment, Pkg, Stat}
+
+import scala.collection.immutable
+import scala.collection.mutable.ListBuffer
+import scala.meta.internal.ast
+import scala.meta.internal.hosts.scalac.contexts.StandaloneContext
 
 object Main {
   def main(args: Array[String]): Unit = {
     println("Start doc generating")
-    val model = dummyModel
-    val generator = new LatexDocGenerator(Index(model))
-    val latexdoc = generator.generate(model)
-    val w = new BufferedWriter(new FileWriter("doc.tex"))
-    w.write(latexdoc)
-    w.close()
+    println(args(0))
+    try {
+      val tex = ConverterExecutor.execute(args(0))
+      val w = new BufferedWriter(new FileWriter("doc.tex"))
+      w.write(tex)
+      w.close()
+    } catch {
+      case e: Exception => println(e.getMessage)
+    }
     println("End doc generating")
   }
 
-
-  def dummyModel = {
-    import newmodel._
+  object ConverterExecutor {
 
 
-    val declType = Decl.Type(
-      Seq(),
-      Type.Name("Queue", Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq()), Term.Name("Queue", Seq()))),
-      Seq(),
-      Type.Bounds(None, None)
-    )
-    val defnType = Defn.Type(
-      Seq(),
-      Type.Name("Queue", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()), Term.Name("Queue", Seq()))),
-      Seq(),
-      Type.Apply(
-        Type.Name("Seq", Seq(Term.Name("scala", Seq()), Term.Name("collection", Seq()), Type.Name("Seq", Seq()))),
-        Seq(Type.Name("Int", Seq()))
-      )
-    )
+    def execute(root: String): String = {
+      val scalaLibraryJar = classOf[App].getProtectionDomain().getCodeSource()
+      val scalaLibraryPath = scalaLibraryJar.getLocation().getFile()
+      import scala.meta._
+      import scala.meta.dialects.Scala211
+      implicit val c: StandaloneContext = Scalahost.mkStandaloneContext(s"-cp $scalaLibraryPath")
 
-    val orgFooFoo = newmodel.Decl.Def(
-      "foo",
-      Type.Name("SomeTrait", Seq(Term.Name("org", Seq()), Term.Name("SomeTrait", Seq()))),
-      Seq(),
-      Seq(),
-      Comment("Stub"),
-      Seq(),
-      Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()), Term.Name("foo", Seq())))
-    val orgFooHello = newmodel.Decl.Def(
-      "hello",
-      Type.Name("SomeTrait", Seq(Term.Name("org", Seq()), Term.Name("SomeTrait", Seq()))),
-      Seq(),
-      Seq(),
-      Comment("Hello method"),
-      Seq(newmodel.Mod.Override),
-      Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()), Term.Name("hello", Seq())))
-    val orgFoo = newmodel.Defn.Object(
-      Type.Name("Foo", Seq(Term.Name("org", Seq()), Type.Name("Foo", Seq()))),
-      newmodel.Template(Seq(Type.Name("Bar", Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq())))), Seq(orgFooFoo, orgFooHello, defnType)),
-      Comment("stub"),
-      Seq(),
-      SourceFile("")
-    )
+      def loop(files: Seq[File]): Seq[File] = if (files.nonEmpty) {
+        files.filter(_.getName.endsWith(".scala")) ++ files.filter(e => e.isDirectory).flatMap(e => loop(e.listFiles))
+      } else {
+        Seq()
+      }
+
+      val sources: Seq[Option[Source]] =
+        loop(new File(root).listFiles()).map {
+          a =>
+            try
+              Some(a.parse[Source])
+            catch {
+              case e: Exception => println(a); None
+            }
+        }
+
+      val someSources: Seq[Source] = sources.collect { case Some(a) => a }
+
+      import scala.meta.internal.ast._
+      import scala.meta.{Template => _, Term => _, _}
+
+      val classes = new scala.collection.mutable.ListBuffer[ast.Pkg]()
 
 
-    val orgBarHello = newmodel.Decl.Def(
-      "hello",
-      Type.Name("SomeTrait", Seq(Term.Name("org", Seq()), Term.Name("SomeTrait", Seq()))),
-      Seq(),
-      Seq(),
-      Comment("Hello method"),
-      Seq(),
-      Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq()), Term.Name("hello", Seq())))
-    val orgBar = newmodel.Defn.Trait(
-      Type.Name("Bar", Seq(Term.Name("org", Seq()), Type.Name("Bar", Seq()))),
-      newmodel.Template(Seq(), Seq(orgBarHello)),
-      Comment("Bar trait"),
-      Seq(),
-      Seq(),
-      SourceFile("")
-    )
+      someSources.foreach {
+        case a: ast.Source => a.transform {
+          case a: ast.Pkg =>
+            classes += a
+            a
+        }
+      }
+      val pkgsWithStats = classes.map(retrivePkgAndSupportedStats).collect { case Some(a) => a }
+      val converted: ListBuffer[(String, Seq[newmodel.Stat])] = pkgsWithStats.map {
+        case (name, stats) =>
+          (name, stats.collect {
+            case a: Defn.Class => ScalametaConverter.convertClass(a)
+            case a: Defn.Object => ScalametaConverter.convertObject(a)
+            case a: Defn.Trait => ScalametaConverter.convertTrait(a)
+          })
+      }
+      val hierarchy = buildHierarchy(converted)
+      LatexDocGenerator(hierarchy)
+    }
 
-    val orgSomeTrait = newmodel.Defn.Trait(
-      Type.Name("SomeTrait", Seq(Term.Name("org", Seq()), Type.Name("SomeTrait", Seq()))),
-      newmodel.Template(Seq(), Seq(orgBarHello, declType)),
-      Comment("SomeTrait trait"),
-      Seq(),
-      Seq(),
-      SourceFile("")
-    )
+    def buildHierarchy(stats: Seq[(String, Seq[Stat])]) = {
+      val pkgs: Seq[Stat] = stats.groupBy(_._1).map(e => (e._1, e._2.flatMap(_._2))).map(e => Pkg(e._1, e._2, Comment(""), Seq())).toList
+      Pkg("_root_",
+        pkgs,
+        Comment(""),
+        Seq())
+    }
+
+    def retrivePkgAndSupportedStats(src: ast.Pkg): Option[(String, Seq[ast.Stat])] = src match {
+      case ast.Pkg(name, stats: immutable.Seq[ast.Stat]) =>
+        Some((name.toString().trim, stats))
+      case _ => None
+    }
 
 
-
-
-    val org = newmodel.Pkg(
-      "org",
-      Seq(orgFoo, orgBar, orgSomeTrait),
-      Comment("asd"),
-      Seq(Term.Name("org", Seq()))
-    )
-    org
   }
+
 }
 
 

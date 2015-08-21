@@ -11,6 +11,8 @@ sealed trait Tree
 
 sealed trait Stat extends Tree
 
+trait DEBUG extends Tree
+
 //for now
 
 
@@ -18,7 +20,7 @@ sealed trait Defn extends Stat
 
 object Defn {
 
-  case class Object(name: newmodel.Type.Name,
+  case class Object(name: newmodel.Term.Name,
                     templ: Template,
                     comment: Comment,
                     mods: Seq[Mod],

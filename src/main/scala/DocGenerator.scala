@@ -37,6 +37,13 @@ object PlainStringGenerator extends DocGenerator {
   }
 }
 
+
+object LatexDocGenerator {
+  def apply(root: Pkg) = {
+    new LatexDocGenerator(Index(root)).generate(root)
+  }
+}
+
 class LatexDocGenerator(index: Index) extends DocGenerator {
 
 
@@ -66,34 +73,56 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
   }
 
   def processPackage(pack: Pkg): String = {
-    val (traitsTex, traitsNested) = processTraits(pack.stats.collect { case t: Trait => t })
-    val (objectsTex, objectsNested) = processObjects(pack.stats.collect { case o: Object => o })
-    val (classesTex, classesNested) = processClasses(pack.stats.collect { case c: Class => c })
-    """
-      \chapter{Package org}{
-    """ ++
-      hypertarget(pack, None) ++
+    if (pack.stats.count {
+      case e: Pkg => true
+      case _ => false
+    } != pack.stats.length) {
+      val traits = processTraits(pack.stats.collect { case t: Trait => t })
+      val objects = processObjects(pack.stats.collect { case o: Object => o })
+      val classes = processClasses(pack.stats.collect { case c: Class => c })
       """
+      \chapter{Package """ ++ pack.name ++ """}{
+                                           """ ++
+        hypertarget(pack, None) ++
+        """
          }\hskip -.05in
          \hbox to \hsize{\textit{ Package Contents\hfil Page}}
          \vskip .13in
-      """ ++ objectsTex ++ "\n" ++ traitsTex ++ "\n" ++ classesTex
+        """ ++
+        objects.map(_._1).getOrElse("") ++ "\n" ++
+        traits.map(_._1).getOrElse("") ++ "\n" ++
+        classes.map(_._1).getOrElse("")
+    } else {
+      ""
+    }
   }
 
 
   def processClasses(classes: Seq[Class]) = {
-    val (tex, nested) = genericProcess(classes, processClass, (e: Class) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Classes}}\n" ++ tex, nested)
+    if (classes.nonEmpty) {
+      val (tex, nested) = genericProcess(classes, processClass, (e: Class) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Classes}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def processObjects(objects: Seq[Object]) = {
-    val (tex, nested) = genericProcess(objects, processObject, (e: Object) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Objects}}\n" ++ tex, nested)
+    if (objects.nonEmpty) {
+      val (tex, nested) = genericProcess(objects, processObject, (e: Object) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Objects}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def processTraits(traits: Seq[Trait]) = {
-    val (tex, nested) = genericProcess(traits, processTrait, (e: Trait) => dumpNested(e.name.name, e.templ))
-    ("\\hbox{{\\bf  Traits}}\n" ++ tex, nested)
+    if (traits.nonEmpty) {
+      val (tex, nested) = genericProcess(traits, processTrait, (e: Trait) => dumpNested(e.name.name, e.templ))
+      Some("\\hbox{{\\bf  Traits}}\n" ++ tex, nested)
+    } else {
+      None
+    }
   }
 
   def genericProcess[A <: Defn](elems: Seq[A],
@@ -112,10 +141,10 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
 
   def dumpParent(tpe: Type.Name) = {
     val p = index.getByLink(tpe.id)
-    val (name, tparams) = p match {
-      case Some(o: Object) => (o.name, Seq())
+    val (name: {def name: String; def id: Seq[Tree]}, tparams) = p match {
       case Some(o: Trait) => (o.name, o.tparams)
       case Some(o: Class) => (o.name, o.tparams)
+      case Some(o: Object) => (o.name, Seq())
     }
     hyperlink(name, Some(name.name)) ++ dumpTypeParams(tparams)
   }
@@ -167,21 +196,38 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\begin{lstlisting}[frame=none]
         {$mods trait $name $extnds $parent}
         \\end{lstlisting}
+        ${methodSection(methods)}
+        ${typeSection(typeAlias, typeMembers)}
+      """
+
+  }
+
+  def methodSection(methods: String): String = {
+    if (methods.isEmpty) {
+      ""
+    } else
+      s"""
         \\subsection{Methods}{
         \\vskip -2em
         \\begin{itemize}
         $methods
         \\end{itemize}
-        }
-        \\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
-      """
+        }"""
+  }
 
+  def typeSection(typeAlias: String, typeMembers: String): String = {
+    if (typeAlias.trim.isEmpty && typeMembers.trim.isEmpty) {
+      ""
+    } else
+      s"""
+       \\subsection{Type}{
+       \\vskip -2em
+       \\begin{itemize}
+      $typeAlias
+      $typeMembers
+      \\end{itemize}
+      }}
+     """
   }
 
 
@@ -192,7 +238,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         case e: Object => (e.name, e.templ, e)
         case e: Trait => (e.name, e.templ, e)
         case e: Class => (e.name, e.templ, e)
-      }.map { case (cname, teamplate, stat) =>
+      }.map { case (cname: {def name: String; def id: Seq[Tree]}, teamplate, stat) =>
         val prepend = if (lvl > maxLVL) pname + "#" else ""
         val item = s"\\item ${hyperlink(cname, Some(prepend ++ cname.name))}\n"
         val (childTex, childStat) = loop(cname.name, teamplate, lvl + 1)
@@ -232,18 +278,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\subsection{Declaration}{
 
         {$mods object $name $extnds $parent}
-        \\subsection{Methods}{
-        \\vskip -2em
-        \\begin{itemize}
-        $methods
-        \\end{itemize}
-        }}\\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
+      ${methodSection(methods)}
+      ${typeSection(typeAlias, typeMembers)}
       """
   }
 
@@ -271,18 +307,8 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         $comment
         \\subsection{Declaration}{
         {$mods object $name $extnds $parent}
-        \\subsection{Methods}{
-        \\vskip -2em
-        \\begin{itemize}
-        $methods
-        \\end{itemize}
-        }}\\subsection{Type}{
-        \\vskip -2em
-        \\begin{itemize}
-        $typeAlias
-        $typeMembers
-        \\end{itemize}
-        }}
+      ${methodSection(methods)}
+      ${typeSection(typeAlias, typeMembers)}
       """
   }
 
@@ -362,7 +388,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
         \\item{
         \\index{$linkId}
         {\\bf  $methodRef}
-            $mods def $tparams($signature) : $returnType
+            $mods def $name$tparams($signature) : $returnType
         \\begin{itemize}
         \\item{
         {\\bf  Description}
@@ -423,6 +449,7 @@ class LatexDocGenerator(index: Index) extends DocGenerator {
      \\tableofcontents
       """
   }
+
   def hypertarget(e: {def id: Seq[Tree]}, text: Option[String]): String = {
     text.map(t => s"\\hypertarget{${link(e.id)}}{$t}").getOrElse("")
   }

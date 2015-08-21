@@ -1,2 +1,9 @@
 target/
 .idea/
+*.aux
+*.idx
+*.log
+*.out
+*.pdf
+*.toc
+*.tex
